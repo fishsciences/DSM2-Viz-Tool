@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1526666914818.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "73BDEF1A",
+    "lastKnownWriteTime" : 1531497951,
+    "last_content_update" : 1531497951463,
+    "path" : "~/Dropbox (Cramer Fish Sciences)/PROJECTS/CFSCAL-2014-DSM2/WORKING/dsm2-hydro-visualization/global.R",
+    "project_path" : "global.R",
+    "properties" : {
+        "cursorPosition" : "8,4",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
