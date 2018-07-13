@@ -19,6 +19,6 @@ install.packages("devtools", repos = "https://cran.rstudio.com/")
 ```
 devtools::source_gist(id = "4351fe4185507fb2e4fc99c189a0f885", filename = "DSM2VizLaunchScript.R")
 ```
-The launch script checks for the required packages, installs any missing packages, and then launches the app in your default browser. The first time running the launch script may take several minutes for installation of all the required R packages. If using [RStudio](https://www.rstudio.com/), the app will first launch in the RStudio Viewer pane. Click on 'Open in Browser' in the top left corner of the Viewer pane to launch your default browswer.
+The launch [script](https://gist.github.com/hinkelman/4351fe4185507fb2e4fc99c189a0f885) checks for the required packages, installs any missing packages, and then launches the app in your default browser. The first time running the launch script may take several minutes for installation of all the required R packages. If using [RStudio](https://www.rstudio.com/), the app will first launch in the RStudio Viewer pane. Click on 'Open in Browser' in the top left corner of the Viewer pane to launch your default browswer.
 
 
