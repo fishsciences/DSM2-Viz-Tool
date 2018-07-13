@@ -4,7 +4,7 @@ An interactive app for visualizing [DSM2](http://baydeltaoffice.water.ca.gov/mod
 
 ### Run app on the web
 
-The app is accessible on the [web](https://fishsciences.shinyapps.io/dsm2-hydro-visualization/) with a modern browser and internet connection. However, if visualizing large files or many files, file upload times may be unacceptably long. In those situations, it may be preferable to run the app locally.
+The app is accessible on the [web](https://fishsciences.shinyapps.io/dsm2-hydro-visualization/) with a modern browser and fast internet connection. However, if visualizing large files or many files, file upload times may be unacceptably long. In those situations, it may be preferable to run the app locally.
 
 ### Run app locally
 
@@ -12,7 +12,7 @@ The app is accessible on the [web](https://fishsciences.shinyapps.io/dsm2-hydro-
 
 (2) Install the 'devtools' package by running the following line in the R console.
 ```
-install.packages("devtools")
+install.packages("devtools", repos = "https://cran.rstudio.com/")
 ```
 
 (3) Run the launch script by running the following in the R console.
