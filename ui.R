@@ -10,7 +10,7 @@ navbarPage("DSM2 Hydro Visualization Tool",
                       tags$meta(property = "og:type", content = "website"),
                       tags$meta(property = "og:url", content = "https://fishsciences.shinyapps.io/dsm2-hydro-visualization/"),
                       tags$meta(property = "og:image", content = "AppImage.png"),
-                      tags$meta(property = "og:description", content = "An interactive tool for visualizing DSM2 Hydro output.")
+                      tags$meta(property = "og:description", content = "An interactive app for visualizing DSM2 Hydro output.")
                     ),
                     sidebarLayout(
                       sidebarPanel(

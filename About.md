@@ -4,7 +4,7 @@ The <a href="http://baydeltaoffice.water.ca.gov/modeling/deltamodeling/models/ds
 
 #### Objective
 
-Despite the widespread use of DSM2, we are not aware of any tools for interactively visualizing DSM2 output. The visualization approach used in this tool is the outcome of our own efforts to effectively visualize DSM2 output. Our initial efforts to visualize DSM2 output involved calculating channel-level summary statistics, creating static, color-scaled maps of the summary statistics, and arranging the color-scaled maps in panels according to boundary conditions (see example below). 
+Despite the widespread use of DSM2, we are not aware of any tools for interactively visualizing DSM2 output. The visualization approach used in this app is the outcome of our own efforts to effectively visualize DSM2 output. Our initial efforts to visualize DSM2 output involved calculating channel-level summary statistics, creating static, color-scaled maps of the summary statistics, and arranging the color-scaled maps in panels according to boundary conditions (see example below). 
 
 <br>
 <img src="PanelMapExample.jpg" height="500" width="824"/>
@@ -12,7 +12,7 @@ Despite the widespread use of DSM2, we are not aware of any tools for interactiv
 
 Mapping DSM2 output allows for identification of broad spatial patterns, but requires summarizing the 15-min values to a single value for mapping. Because distributions of 15-min values in the Delta are frequently bimodal (tidal influence) and asymmetric, a single value (e.g., median, mean) may not effectively represent conditions in the channel. Arranging maps in panels with different boundary conditions allows for comparing patterns across conditions, but changes in colors across map panels may be difficult to detect.
 
-We suggest that Delta maps should be linked to density plots that show the distribution of 15-min (or 1-hr) DSM2 output for a selected channel and that the maps should be based on comparative metrics to address the challenges of representing distributions with a single value and making comparisons between maps, respectively. In this tool, we provide two comparative metrics: the absolute difference in summary statistics and the proportion overlap in density distributions (more below). 
+We suggest that Delta maps should be linked to density plots that show the distribution of 15-min (or 1-hr) DSM2 output for a selected channel and that the maps should be based on comparative metrics to address the challenges of representing distributions with a single value and making comparisons between maps, respectively. In this app, we provide two comparative metrics: the absolute difference in summary statistics and the proportion overlap in density distributions (more below). 
 
 #### Approach 
 
@@ -24,17 +24,17 @@ The proportion overlap of two kernel density estimates is calculated with the fo
 
 The map color is scaled by the absolute difference or proportion overlap value for each channel. An absolute difference at or near zero or a proportion overlap value at or near one are reliable indicators that a channel is not affected by the comparison selected. However, a value greater than zero (difference) or less than one (overlap) requires investigation of the density plots because there are numerous shapes of distributions that can produce similar difference or overlap values. In this way, though, the map can be used to delineate the spatial extent of the selected effect and density plots can be examined for channels within that spatial extent to visualize the changes in velocity (or flow) distributions.
 
-#### Delta Hydrodynamics App
+#### Run App Locally
 
-The visualization concepts included in the 'Visualize DSM2 Output' tab of this tool are presented as a more fully-featured example based on a large set of DSM2 output in the <a href="https://fishsciences.shinyapps.io/delta-hydrodynamics/" target="_blank">Delta Hydrodynamics app</a>.
-
-#### Desktop Version
-
-We are currently exploring the option of providing this tool as a desktop application for the Windows operating system. The primary benefit of a desktop version is to avoid the slow file upload times.
+Running this app on the web has the advantage of not requiring any software installation. However, if visualizing large files or many files, file upload times may be unacceptably long. In those situations, it may be preferable to run the app locally, which requires the installation of <a href="https://www.r-project.org/" target="_blank">R</a>. Instructions for running the app locally are found on the <a href="https://github.com/fishsciences/dsm2-hydro-visualization" target="_blank">GitHub repository</a>.
 
 #### Bug Reports and Feature Requests
 
-This tool has only be tested on a small number of DSM2 output files. Please don't hesitate to contact us with bug reports and feature requests.
+This app has only be tested on a small number of DSM2 output files. Please don't hesitate to contact us (see below) with bug reports and feature requests or file an issue on the <a href="https://github.com/fishsciences/dsm2-hydro-visualization/issues" target="_blank">GitHub repository</a>.
+
+#### Delta Hydrodynamics App
+
+The visualization concepts included in the 'Visualize DSM2 Output' tab of this app are presented as a more fully-featured example based on a large set of DSM2 output in the <a href="https://fishsciences.shinyapps.io/delta-hydrodynamics/" target="_blank">Delta Hydrodynamics app</a>.
 
 <br>
 <center>Contact [Brad Cavallo](bcavallo@fishsciences.net) or [Travis Hinkelman](travis.hinkelman@fishsciences.net) with questions.</center>
