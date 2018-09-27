@@ -31,7 +31,7 @@ navbarPage("DSM2 Hydro Visualization Tool",
                         
                         
                         br(),
-                        hidden(pickerInput(inputId = "sel_scenarios", label = "Select files", choices = NULL, multiple = TRUE)),
+                        hidden(pickerInput(inputId = "sel_scenarios", label = "Select files to visualize", choices = NULL, multiple = TRUE)),
                         hidden(pickerInput(inputId = "base_scenario", label = "Select file for baseline scenario", choices = NULL)),
                         hidden(dateRangeInput('date_range', label = 'Date range')),
                         hidden(radioGroupButtons(inputId = "nodes", label = "Nodes",
@@ -45,8 +45,8 @@ navbarPage("DSM2 Hydro Visualization Tool",
                         fluidRow(
                           column(1),
                           column(5, 
-                                 hidden(checkboxGroupButtons(inputId = "ts_plots", label = "Plots shown", choices = c("Velocity", "Flow", "Area"), 
-                                                             selected = c("Velocity", "Flow"),
+                                 hidden(checkboxGroupButtons(inputId = "ts_plots", label = "Plots shown", choices = c("Velocity", "Flow", "Stage"), 
+                                                             selected = c("Velocity"),
                                                              checkIcon = list(yes = icon("ok", lib = "glyphicon"))))
                           ),
                           column(3, 
@@ -55,7 +55,7 @@ navbarPage("DSM2 Hydro Visualization Tool",
                           ),
                           column(3)
                         ),
-                        conditionalPanel(condition = "input.ts_plots.indexOf('Velocity') > -1",
+                        conditionalPanel(condition = "input.ts_plots.indexOf('Velocity') > -1",  # should have noted where I found this; I don't know how it works now
                                          plotOutput("tsVelocityPlot")),
                         br(),
                         br(),
@@ -63,14 +63,14 @@ navbarPage("DSM2 Hydro Visualization Tool",
                                          plotOutput("tsFlowPlot")),
                         br(),
                         br(),
-                        conditionalPanel(condition = "input.ts_plots.indexOf('Area') > -1",
-                                         plotOutput("tsAreaPlot"))
+                        conditionalPanel(condition = "input.ts_plots.indexOf('Stage') > -1",
+                                         plotOutput("tsStagePlot"))
                       )
                     ),
                     # info button placed with absolutePanel() ----------------------------------------------------------------
                     
-                    absolutePanel(top = 90, right = 30, style = "opacity: 0.95;",
-                                  actionBttn("proc_info", "", icon("info"), style = "material-circle", size = "md")
+                    absolutePanel(top = 85, right = 40, style = "opacity: 0.95;",
+                                  actionBttn("proc_info", "", icon("info"), style = "material-circle", size = "sm")
                     )
            ),
            tabPanel("Visualize DSM2 Output",
@@ -81,7 +81,6 @@ navbarPage("DSM2 Hydro Visualization Tool",
                     ),
                     
                     # map fills the screen and absolutePanels are placed on top
-                    # absolutePanel placement chosen by trial-and-error
                     leafletOutput('Map'),
                     
                     # channel panel ----------------------------------------------------------------
@@ -110,15 +109,15 @@ navbarPage("DSM2 Hydro Visualization Tool",
                     
                     # main panel ----------------------------------------------------------------
                     # top right
-                    # heavy use of conditional panels to display the correct inputs given choices for other inputs
-                    absolutePanel(top = 80, right = 20, width = 220, style = "opacity: 0.8;",
+                    absolutePanel(top = 80, right = 35, width = 235, style = "opacity: 0.8;",
                                   hidden(
                                     wellPanel(
                                       id = "mainPanel",
                                       radioGroupButtons(inputId = "metric", label = "Response metric",
-                                                        choices = c("Velocity" = "velocity", "Flow" = "flow"), selected = "velocity"),
+                                                        choices = c("Velocity" = "velocity", "Flow" = "flow", "Stage" = "stage"), selected = "velocity"),
                                       selectInput(inputId = "summ_stat", label = "Summary statistic",
                                                   choices = summ.stats, selected = "mean"),
+                                      hidden(helpText(id = "ss_help",  "Please select a summary statistic.")),
                                       radioGroupButtons(inputId = "type", label = "Map color variable",
                                                         choices = c("Overlap" = "po", "Difference" = "ad"), selected = "po"),
                                       selectInput(inputId = "comp_scenario", label = "Comparison scenario", choices = NULL)
@@ -127,22 +126,22 @@ navbarPage("DSM2 Hydro Visualization Tool",
                     ),
                     
                     # density plot ----------------------------------------------------------------
-                    absolutePanel(bottom = -225, height = 542, left = 20, width = 300, style = "opacity: 0.95;", 
+                    absolutePanel(bottom = -105, left = 20, width = 500, style = "opacity: 0.95;", # trial-and-error to select value for bottom; not sure how that works
                                   plotOutput("densityPlot")
                     ),
                     
                     # small panel that is overlain on plotting panel
-                    absolutePanel(bottom = 280, left = 330, style = "opacity: 0.95;",
+                    absolutePanel(bottom = 260, left = 280, style = "opacity: 0.95;",
                                   hidden(checkboxInput("scale_axes", "Scale axes across comparisons", TRUE))
                     ),
                     
                     # info button placed with absolutePanel() ----------------------------------------------------------------
                     
-                    absolutePanel(top = 90, right = 30, style = "opacity: 0.95;",
-                                  actionBttn("map_info", "", icon("info"), style = "material-circle", size = "md")
+                    absolutePanel(top = 85, right = 40, style = "opacity: 0.95;",
+                                  actionBttn("map_info", "", icon("info"), style = "material-circle", size = "sm")
                     ),
-                    absolutePanel(bottom = 30, left = 502, style = "opacity: 0.95;",
-                                  hidden(actionBttn("plot_info", "", icon("info"), style = "material-circle", size = "md"))
+                    absolutePanel(bottom = 20, left = 480, style = "opacity: 0.95;",
+                                  hidden(actionBttn("plot_info", "", icon("info"), style = "material-circle", size = "sm"))
                     )
            ),
            tabPanel("About", includeMarkdown("About.md"))

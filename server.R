@@ -19,7 +19,7 @@ function(input, output, session) {
   })
   
   observe({
-    req(rv$H5, isTRUE(nrow(rv$H5) > 1), input$sel_scenarios)
+    req(rv$H5, isTRUE(nrow(rv$H5) > 1), input$sel_scenarios, input$base_scenario)
     toggle("proc_dsm2", condition = length(input$sel_scenarios) > 1)
   })
   
@@ -93,6 +93,10 @@ function(input, output, session) {
     h5_read(selectedScenarios(), "/data/channel area")
   })
   
+  stageList <- reactive({
+    h5_read(selectedScenarios(), "/data/channel stage")
+  })
+  
   velocityList <- reactive({
     out = list()
     for (i in names(flowList())){
@@ -139,30 +143,30 @@ function(input, output, session) {
   
   # * filter  ----------------------------------------------------------------
   
-  fvcd <- reactive({   # fvcd = flow velocity channel dates
-    al = areaList()
+  fvcd <- reactive({   # fvcd = flow velocity channel dates; named before added other output, i.e., stage, nodes
     fl = flowList()
     vl = velocityList()
+    sl = stageList()
     cl = channelList()
     dl = datesList()
     nl = nodeList()
     
-    ao = list() # ao = area out
     fo = list() # fo = flow out
     vo = list() # vo = velocity out
+    so = list() # so = stage out
     co = list() # co = channels out; trying to preserve order of channels in H5 files (perhaps unnecessarily?)
     do = list() # do = dates out
     for (i in names(flowList())){
       ni = which(process_nodes(nl[[i]]) == input$nodes)  # process_nodes formats text to match input$nodes
       ci = which(cl[[i]] %in% availableChannels())
       di = which(dl[[i]] >= input$date_range[1] & dl[[i]] <= input$date_range[2])  # di = date indices
-      ao[[i]] = al[[i]][ni, ci, di]
       fo[[i]] = fl[[i]][ni, ci, di]
       vo[[i]] = vl[[i]][ni, ci, di]
+      so[[i]] = sl[[i]][ni, ci, di]
       co[[i]] = cl[[i]][ci]
       do[[i]] = dl[[i]][di]
     }
-    return(list("area" = ao, "flow" = fo, "velocity" = vo, "channels" = co, "chan.index" = ci, "dates" = do))
+    return(list("flow" = fo, "velocity" = vo, "channels" = co, "stage" = so, "chan.index" = ci, "dates" = do))
   })
   
   # * time series plots  ----------------------------------------------------------------
@@ -173,7 +177,7 @@ function(input, output, session) {
     dl = al[["dates"]]
     
     out = list()
-    for (j in c("flow", "velocity", "area")){
+    for (j in c("flow", "velocity", "stage")){
       for (i in names(cl)){
         ci = which(cl[[i]] %in% input$ts_channel)
         out[[j]][[i]] = tibble(Date = dl[[i]],
@@ -194,9 +198,9 @@ function(input, output, session) {
     ts_plot(tsDF()$flow, "Flow (cfs)")
   })
   
-  output$tsAreaPlot = renderPlot({
-    req(nrow(rv$H5) > 1, nrow(tsDF()$area) > 0)
-    ts_plot(tsDF()$area, "Area (sq. ft)")
+  output$tsStagePlot = renderPlot({
+    req(nrow(rv$H5) > 1, nrow(tsDF()$stage) > 0)
+    ts_plot(tsDF()$stage, "Stage (ft)")
   })
   
   # * summary statistics  ----------------------------------------------------------------
@@ -205,7 +209,7 @@ function(input, output, session) {
     al = fvcd() # al = all lists; fvcd is a list of lists
     cl = al[["channels"]]
     out = list()
-    for (j in c("flow", "velocity")){
+    for (j in c("flow", "velocity", "stage")){
       for (i in names(cl)){
         out[[j]][[i]] = calc_summary_stats(al[[j]][[i]], 1, cl[[i]])
       }
@@ -229,7 +233,7 @@ function(input, output, session) {
       po = list()  # po = proportion overlap
       ad = list()  # ad = absolute difference
       ad.re = list() # ad.re = absolute difference rescaled to 0-1 across channels and scenarios
-      for (j in c("flow", "velocity")){
+      for (j in c("flow", "velocity", "stage")){
         ss.comb[[j]] = bind_rows(ss[[j]], .id = "scenario")
         po.base = al[[j]][[input$base_scenario]]
         ad.base = ss[[j]][[input$base_scenario]] %>% arrange(channel)
@@ -255,7 +259,7 @@ function(input, output, session) {
             
             po.chan[k] = po.out$po
             
-            incProgress(1/(2 * length(nonBase()) * length(ac)), detail = "Calculating...") # first two is for c("flow", "velocity")
+            incProgress(1/(3 * length(nonBase()) * length(ac)), detail = "Calculating...") # three is for c("flow", "velocity", "stage")
           }
           dn.comp.list[[i]] = bind_rows(dn.chan.list)
           po.comp.list[[i]] = tibble(channel = ac, prop.overlap = po.chan)
@@ -291,25 +295,35 @@ function(input, output, session) {
   observe({
     cond = !is.null(rv$PO)
     toggle("map_pal", condition = cond)
-    toggle("po_range", condition = cond)
-    toggle("ad_range", condition = cond)
+    toggle("color_range", condition = cond)
     toggle("remove_channels", condition = cond)
     toggle("mainPanel", condition = cond)  
     toggle("plot_info", condition = cond)
   })
   
-  observe({ # assuming that need separate observe to trigger on different condition
-    req(rv$NB)                        # tried to combine this with following condition, but it didn't work
-    cond = length(rv$NB) > 1  
+  observe({ 
+    req(rv$NB)                        
+    cond = length(rv$NB) > 1 & input$summ_stat != ""
     toggle("scale_axes", condition = cond)
     toggle("comp_scenario", condition = cond)
   })
+
+  observe({ 
+    req(rv$NB) 
+    cond = input$summ_stat == ""
+    toggle("ss_help", condition = cond)
+  })
   
+  observeEvent(input$metric,{
+    ch = summ.stats
+    if(input$metric == "stage") ch = summ.stats[summ.stats != "prop.neg"]
+    updateSelectInput(session, "summ_stat", choices = ch, selected = input$summ_stat)
+  })
   
   # * filter ----------------------------------------------------------------
   
   poSub <- reactive({
-    req(input$comp_scenario)
+    req(rv$PO, input$comp_scenario)
     po = rv$PO[[input$metric]]
     return(po[po[["comp"]] == input$comp_scenario & !(po[["channel"]] %in% rv$DC),])
   })
@@ -320,7 +334,7 @@ function(input, output, session) {
   })
   
   adSub <- reactive({
-    req(input$comp_scenario)
+    req(rv$AD, input$comp_scenario, input$summ_stat != "")
     ad = rv$AD[[input$metric]]
     ad.sub = ad[ad[["comp"]] == input$comp_scenario & !(ad[["channel"]] %in% rv$DC),]
     ad.sub[["value"]] = ad.sub[[input$summ_stat]]
@@ -333,7 +347,7 @@ function(input, output, session) {
   })
   
   ssSub <- reactive({
-    req(input$comp_scenario)
+    req(input$comp_scenario, input$summ_stat != "")
     ss = rv$SS[[input$metric]]
     ss[["value"]] = ss[[input$summ_stat]] # rename summary stat column to value for plotting later
     ss = ss[ss[["channel"]] == input$map_channel & ss[["scenario"]] %in% c(rv$B, input$comp_scenario),]
@@ -393,7 +407,7 @@ function(input, output, session) {
       p = p + geom_vline(data = ssSub(), aes(xintercept = value, col = factor(scenario)), linetype = "dashed", size = 1)
     }
     return(p)
-  }, width = 542, height = 300)
+  }, width = 500, height = 280)
   
   # * map data ----------------------------------------------------------------
   # join map data with appropriate value for coloring channels on map
@@ -565,7 +579,7 @@ function(input, output, session) {
       title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
       text = "Click browse to upload at least two H5 files of DSM2 Hydro output for comparison. Example H5 files are available to download.
       
-      After uploading the files, the flow and channel area output are extracted from the H5 files and velocity is calculated by dividing flow by channel area. By default, the flow and velocity time series plots are shown with the option to also show the channel area plot.
+      After uploading the files, the stage, flow, and channel area output are extracted from the H5 files and velocity is calculated by dividing flow by channel area. By default, the velocity time series plot is shown with the option to also show the flow and stage plots.
       
       A subset of the uploaded files can be selected for use in the time series plots and subsequent visualizations. However, it is recommended to only upload two files when trying new files because upload times can be slow.
       
@@ -598,11 +612,11 @@ function(input, output, session) {
       sendSweetAlert(
         session = session,
         title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-        text = "Overlap is the proportion overlap in the density distributions for the selected comparison. Proportion overlap ranges from zero to one.
+        text = "Overlap is the proportion overlap in the density distributions for the selected comparison. Proportion overlap ranges from 0 to 1.
         
-        Difference is the absolute difference in the selected summary statistic for the selected comparison. Absolute difference ranges from zero to positive infinity.
+        Difference is the absolute difference in the selected summary statistic for the selected comparison. The absolute differences are rescaled across channels and scenarios to values ranging from 0 to 1; except for 'Reversal' which naturally ranges from 0 to 1.
         
-        By default, map color is scaled from 0 to 1 (proportion overlap) or 0 to the maximum absolute difference across all comparisons. To adjust the map color range, click on 'Show map tools' in the top left panel.
+        By default, map color is scaled from 0 to 1. To adjust the map color range, click on 'Show map tools' in the top left panel.
         
         When the 'Remove channels' switch is on (under 'Show map tools'), clicking on a channel removes that channel from the map.",
         type = "info",
@@ -616,11 +630,13 @@ function(input, output, session) {
     sendSweetAlert(
       session = session,
       title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-      text = "The density plot shows the distribution of 15-min (or 1-hr) velocity/flow values over the selected date range for the selected comparison. 
+      text = "The density plot shows the distribution of 15-min (or 1-hr) velocity/flow/stage values over the selected date range for the selected comparison. 
       
-      The absolute difference in the selected summary statistic and proportion overlap of the distributions are shown in the top left and top right corners of the plot, respectively.
+      The rescaled absolute difference in the selected summary statistic and proportion overlap of the distributions are shown in the top left and top right corners of the plot, respectively.
       
-      The dashed vertical lines show the value of the selected summary statistic. Vertical lines are not displayed when 'Reversal' is selected as the summary statistic. Reversal is the proportion of values that are negative.
+      The dashed vertical lines show the value of the selected summary statistic. Vertical lines are not displayed when 'Reversal' is selected as the summary statistic. 
+
+      Reversal is the proportion of values that are negative. Reversal only applies to flow and velocity, not stage.
       
       The minimum and maximum summary statistics do not always align with the minimum and maximum extent of the distributions because the density estimates are based on a smoothing kernel.",
       type = "info",

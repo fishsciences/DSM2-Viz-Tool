@@ -55,8 +55,7 @@ channels = sort(cll$channel_nu)  # used for selectInput widget
 siw = 150 # selectInput width
 
 # lookup vectors for linking descriptive names to simple names for plotting purposes
-x.labs = c("Velocity (ft/s)" = "velocity", "Flow (cfs)" = "flow")
-
+x.labs = c("Velocity (ft/s)" = "velocity", "Flow (cfs)" = "flow", "Stage (ft)" = "stage")
 
 summ.stats = c("Min" = "min",
               "1st quartile" = "first.quart",
