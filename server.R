@@ -219,7 +219,7 @@ function(input, output, session) {
     
     rv$DN = rv$PO = rv$AD = rv$SS = rv$B = rv$NB = NULL # clear out previous results
     
-    withProgress(message = 'Processing DSM2 output...', value = 0, {
+    withProgress(message = 'Processing DSM2 output...', value = 0, detail = "Initializing...",{
       al = fvcd() # al = all lists; fvcd is a list of lists
       ac = al[["channels"]][[input$base_scenario]] # ac = all channels; should be same for all scenarios
       ss = sumStats()
@@ -228,6 +228,7 @@ function(input, output, session) {
       dn = list()  # dn = density
       po = list()  # po = proportion overlap
       ad = list()  # ad = absolute difference
+      ad.re = list() # ad.re = absolute difference rescaled to 0-1 across channels and scenarios
       for (j in c("flow", "velocity")){
         ss.comb[[j]] = bind_rows(ss[[j]], .id = "scenario")
         po.base = al[[j]][[input$base_scenario]]
@@ -238,7 +239,7 @@ function(input, output, session) {
         for (i in nonBase()){
           po.comp = al[[j]][[i]]
           ad.comp = ss[[j]][[i]] %>% arrange(channel)
-          ad.comp.list[[i]] = abs(ad.comp[,ss.levels] - ad.base[,ss.levels]) %>% # ss.levels just specifices the summary statistic colums for the comparison (i.e., ignores channel column)
+          ad.comp.list[[i]] = abs(ad.comp[,summ.stats] - ad.base[,summ.stats]) %>% # summ.stats just specifices the summary statistic colums for the comparison (i.e., ignores channel column)
             mutate(channel = ad.comp[["channel"]])
           dn.chan.list = list()
           po.chan = vector(mode = "numeric", length = length(ac))
@@ -254,19 +255,24 @@ function(input, output, session) {
             
             po.chan[k] = po.out$po
             
-            incProgress(1/(2 * length(nonBase()) * length(ac))) # first two is for c("flow", "velocity")
+            incProgress(1/(2 * length(nonBase()) * length(ac)), detail = "Calculating...") # first two is for c("flow", "velocity")
           }
           dn.comp.list[[i]] = bind_rows(dn.chan.list)
           po.comp.list[[i]] = tibble(channel = ac, prop.overlap = po.chan)
         }
-        dn[[j]] = bind_rows(dn.comp.list, .id = "comp") %>% mutate(base = input$base_scenario) # adding base scenario to output for completeness, but not necessary for subsequent calcs (I think)
-        po[[j]] = bind_rows(po.comp.list, .id = "comp") %>% mutate(base = input$base_scenario)
-        ad[[j]] = bind_rows(ad.comp.list, .id = "comp") %>% mutate(base = input$base_scenario)
+        dn[[j]] = bind_rows(dn.comp.list, .id = "comp") %>% 
+          mutate(base = input$base_scenario) # adding base scenario to output for completeness, but not necessary for subsequent calcs (I think)
+        po[[j]] = bind_rows(po.comp.list, .id = "comp") %>% 
+          mutate(base = input$base_scenario)
+        ad[[j]] = bind_rows(ad.comp.list, .id = "comp") %>% 
+          mutate(base = input$base_scenario)
+        ad.re[[j]] = ad[[j]] %>% 
+          mutate_at(.vars = rescale.cols, .funs = rescale)
       }
     })
     rv$DN = dn
     rv$PO = po
-    rv$AD = ad
+    rv$AD = ad.re              
     rv$SS = ss.comb
     rv$B = input$base_scenario # need to stash all values at time button was clicked
     rv$NB = nonBase()
@@ -326,7 +332,6 @@ function(input, output, session) {
     return(ad[ad[["channel"]] == input$map_channel, ])
   })
   
-
   ssSub <- reactive({
     req(input$comp_scenario)
     ss = rv$SS[[input$metric]]
@@ -393,20 +398,38 @@ function(input, output, session) {
   # * map data ----------------------------------------------------------------
   # join map data with appropriate value for coloring channels on map
   
+  shpSub <- reactive({
+    subset(shp, !(channel_nu %in% rv$DC))
+  })
+  
   poData <- reactive({
     req(input$type == "po")
-    shp = subset(shp, !(channel_nu %in% rv$DC))
+    shp = shpSub()
+    cr = input$color_range
     shp@data = shp@data %>% 
-      left_join(select(poSub(), channel_nu = channel, overlap = prop.overlap), by = "channel_nu")
-    return(shp)
+      left_join(select(poSub(), channel_nu = channel, overlap = prop.overlap), by = "channel_nu") %>% 
+      mutate(overlap = ifelse(overlap < cr[1], cr[1],
+                              ifelse(overlap > cr[2], cr[2], overlap)))
+    pal = colorNumeric(
+      palette = input$map_pal, 
+      domain = cr)
+    return(list(shp, pal))
   })
   
   adData <- reactive({
     req(input$type == "ad")
-    shp = subset(shp, !(channel_nu %in% rv$DC))
+    shp = shpSub()
+    cr = input$color_range
     shp@data = shp@data %>%
-      left_join(select(adSub(), channel_nu = channel, value), by = "channel_nu")
-    return(shp)
+      left_join(select(adSub(), channel_nu = channel, value), by = "channel_nu") %>% 
+      mutate(value = ifelse(value < cr[1], cr[1],
+                            ifelse(value > cr[2], cr[2], value)))
+    pal = colorNumeric(
+      palette = input$map_pal,
+      domain = cr,
+      reverse = TRUE  # for difference, high values indicate greater effect, which is opposite of proportion overlap; reverse the palette to reduce cognitive burden of palette flipping when moving from proportion overlap to absolute difference
+    )
+    return(list(shp, pal))
   })
   
   # * channel map  ----------------------------------------------------------------
@@ -433,61 +456,12 @@ function(input, output, session) {
     }
   })
   
-  # ** palettes ----------------------------------------------------------------
-  
-  poPal <- reactive({
-    colorNumeric(
-      palette = input$map_pal, 
-      domain = input$po_range
-    )
-  })
-  
-  adPal <- reactive({
-    # Create color palette for absolute difference
-    colorNumeric(
-      palette = input$map_pal,
-      domain = adRangeSel(),
-      reverse = TRUE  # for difference, high values indicate greater effect, which is opposite of proportion overlap; reverse the palette to reduce cognitive burden of palette flipping when moving from proportion overlap to absolute difference
-    )
-  })
-  
-  adRange <- reactive({   
-    req(input$type == "ad") # only trigger this reactive if type is absolute difference
-    df = rv$AD[[input$metric]]
-    x = df[[input$summ_stat]][!(df[["channel"]] %in% rv$DC)]
-    mx = max(x, na.rm = TRUE)
-    dig = case_when(
-      mx > 10000 ~ 1000,
-      mx > 1000 ~ 100,
-      mx > 100 ~ 10,
-      mx > 10 ~ 1,
-      mx > 1 ~ 0.1,
-      TRUE      ~ 0.01
-    )
-    out = c("max" = plyr::round_any(mx, dig, ceiling), "step" = dig)
-    return(out)
-  })
-  
-  observeEvent(adRange(),{
-    x = adRange()
-    updateSliderInput(session, "ad_range", max = x[["max"]], value = c(0, x[["max"]]), step = x[["step"]])
-  })
-  
-  adRangeSel <- reactive({
-    # couldn't figure out a way to avoid 'double-blinking' (from overly eager updating?) on map when 'ad' is selected for type and metric or summ_stat changes
-    # this reactive confines the double-blinking to when map_tools is TRUE
-    x = c(0, adRange()[["max"]])
-    if (input$map_tools == TRUE) x = input$ad_range
-    return(x)
-  })
-  
   # ** draw shapefiles with color scales ----------------------------------------------------------------
   
   # draw proportion overlap map
-  observe({
-    req(input$type == "po")
-    pd = poData() 
-    pal.po <- poPal()
+  observeEvent(poData(),{
+    pd = poData()[[1]]
+    pal.po <- poData()[[2]]
     delta.map = leafletProxy("Map", session) %>%
       clearShapes() %>% 
       addPolylines(data = pd,
@@ -500,10 +474,9 @@ function(input, output, session) {
   })
   
   # draw absolute difference map
-  observe({
-    req(input$type == "ad")
-    ad = adData() 
-    pal.ad = adPal()
+  observeEvent(adData(),{
+    ad = adData()[[1]]
+    pal.ad = adData()[[2]]
     delta.map = leafletProxy("Map", session) %>%
       clearShapes() %>% 
       addPolylines(data = ad,
@@ -514,7 +487,6 @@ function(input, output, session) {
       addLegend("bottomright", pal = pal.ad, values = ad@data[["value"]], title = "Difference", opacity = 0.8)
     return(delta.map)
   })
-
   
   # * map interactivity  ----------------------------------------------------------------
   # zoom and place map markers for selected channels
@@ -572,7 +544,6 @@ function(input, output, session) {
   
   # update the map markers and view on location selectInput changes
   observeEvent(input$map_channel, { 
-    # req(input$Map_zoom) # map zoom is initially zero until set in renderLeaflet
     if (input$remove_channels == FALSE){
       p <- input$Map_shape_click
       p2 <- filter(cll, channel_nu == input$map_channel)

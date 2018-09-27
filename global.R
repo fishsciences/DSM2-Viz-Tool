@@ -28,6 +28,7 @@ library(dplyr)
 library(ggplot2)
 library(lubridate)
 library(shinyjs)
+library(scales)
 
 source("helper.R")
 
@@ -56,13 +57,17 @@ siw = 150 # selectInput width
 # lookup vectors for linking descriptive names to simple names for plotting purposes
 x.labs = c("Velocity (ft/s)" = "velocity", "Flow (cfs)" = "flow")
 
-ss.levels = c("Min" = "min",
+
+summ.stats = c("Min" = "min",
               "1st quartile" = "first.quart",
               "Median" = "median",
               "Mean" = "mean",
               "3rd quartile" = "third.quart",
               "Max" = "max",
               "Reversal" = "prop.neg")
+
+# don't need to rescale prop.neg; need unnamed vector for mutate_at
+rescale.cols = c("min", "first.quart", "median", "mean", "third.quart", "max")
 
 # custom ggplot2 theme
 theme.mod = theme(plot.title = element_text(size = 16),

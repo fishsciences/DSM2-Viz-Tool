@@ -4,7 +4,7 @@ The <a href="http://baydeltaoffice.water.ca.gov/modeling/deltamodeling/models/ds
 
 #### Objective
 
-Despite the widespread use of DSM2, we are not aware of any tools for interactively visualizing DSM2 output. The visualization approach used in this app is the outcome of our own efforts to effectively visualize DSM2 output. Our initial efforts to visualize DSM2 output involved calculating channel-level summary statistics, creating static, color-scaled maps of the summary statistics, and arranging the color-scaled maps in panels according to boundary conditions (see example below). 
+The visualization approach used in this app is the outcome of our own efforts to effectively visualize DSM2 output. Our initial efforts to visualize DSM2 output involved calculating channel-level summary statistics, creating static, color-scaled maps of the summary statistics, and arranging the color-scaled maps in panels according to boundary conditions (see example below). 
 
 <br>
 <img src="PanelMapExample.jpg" height="500" width="824"/>
@@ -31,10 +31,6 @@ Running this app on the web has the advantage of not requiring any software inst
 #### Bug Reports and Feature Requests
 
 This app has only be tested on a small number of DSM2 output files. Please don't hesitate to contact us (see below) with bug reports and feature requests or file an issue on the <a href="https://github.com/fishsciences/dsm2-hydro-visualization/issues" target="_blank">GitHub repository</a>.
-
-#### Delta Hydrodynamics App
-
-The visualization concepts included in the 'Visualize DSM2 Output' tab of this app are presented as a more fully-featured example based on a large set of DSM2 output in the <a href="https://fishsciences.shinyapps.io/delta-hydrodynamics/" target="_blank">Delta Hydrodynamics app</a>.
 
 <br>
 <center>Contact [Brad Cavallo](bcavallo@fishsciences.net) or [Travis Hinkelman](travis.hinkelman@fishsciences.net) with questions.</center>
