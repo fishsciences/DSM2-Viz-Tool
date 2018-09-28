@@ -1,6 +1,6 @@
 #### Background
 
-The <a href="http://baydeltaoffice.water.ca.gov/modeling/deltamodeling/models/dsm2/dsm2.cfm" target="_blank">DSM2</a> Hydro model (hereafter, DSM2) is a one-dimensional hydrodynamic model simulating stage, flow, and velocity in the Delta’s network of channels. For a given set of boundary conditions (tides, river inflows, exports, and barriers), DSM2 provides stage, flow, and velocity estimates at 15-minute intervals for hundreds of channels in the Delta. DSM2 has been extensively tested by the California Department of Water Resources and is used for planning and operation of the State Water Project and Central Valley Project diversion pumping as well as for management and satisfaction of stringent water quality standards.  
+The <a href="http://baydeltaoffice.water.ca.gov/modeling/deltamodeling/models/dsm2/dsm2.cfm" target="_blank">DSM2</a> HYDRO model (hereafter, DSM2) is a one-dimensional hydrodynamic model simulating stage, flow, and velocity in the Delta’s network of channels. For a given set of boundary conditions (tides, river inflows, exports, and barriers), DSM2 provides stage, flow, and velocity estimates at 15-minute intervals for hundreds of channels in the Delta. DSM2 has been extensively tested by the California Department of Water Resources and is used for planning and operation of the State Water Project and Central Valley Project diversion pumping as well as for management and satisfaction of stringent water quality standards.  
 
 #### Objective
 
