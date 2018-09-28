@@ -1,6 +1,6 @@
-# DSM2 Hydro Visualization Tool
+# DSM2 HYDRO Visualization Tool
 
-An interactive app for visualizing [DSM2](http://baydeltaoffice.water.ca.gov/modeling/deltamodeling/models/dsm2/dsm2.cfm) Hydro output (H5 files) based on the [Shiny](https://shiny.rstudio.com/) web framework for [R](https://www.r-project.org/).
+An interactive app for visualizing [DSM2](http://baydeltaoffice.water.ca.gov/modeling/deltamodeling/models/dsm2/dsm2.cfm) HYDRO output (H5 files) based on the [Shiny](https://shiny.rstudio.com/) web framework for [R](https://www.r-project.org/).
 
 ### Run app on the web
 
