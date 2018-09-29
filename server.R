@@ -42,6 +42,7 @@ function(input, output, session) {
     updateDateRangeInput(session, "date_range",
                          start = min(ad), end = max(ad),
                          min = min(ad), max = max(ad))
+    updateCheckboxGroupButtons(session, "ts_plots", selected = "Velocity") # if velocity is selected in ui.R, then cssloader shows up when page is first loaded
   })
   
   observe({
@@ -144,6 +145,8 @@ function(input, output, session) {
   # * filter  ----------------------------------------------------------------
   
   fvcd <- reactive({   # fvcd = flow velocity channel dates; named before added other output, i.e., stage, nodes
+    req(rv$H5, isTRUE(nrow(rv$H5) > 1), input$sel_scenarios, input$base_scenario)
+    validate(need(input$date_range[2] > input$date_range[1], "Please choose larger date range."))
     fl = flowList()
     vl = velocityList()
     sl = stageList()
@@ -183,23 +186,23 @@ function(input, output, session) {
         out[[j]][[i]] = tibble(Date = dl[[i]],
                                Value = al[[j]][[i]][ci,])
       }
-      out[[j]] = bind_rows(out[[j]], .id = "scenario")
+      out[[j]] = bind_rows(out[[j]], .id = "Scenario")
     }
     return(out)
   })
   
   output$tsVelocityPlot = renderPlot({
-    req(nrow(rv$H5) > 1, nrow(tsDF()$velocity) > 0)
+    req(isTRUE(nrow(rv$H5) > 1), input$base_scenario, nrow(tsDF()$velocity) > 0)
     ts_plot(tsDF()$velocity, "Velocity (ft/s)")
   })
   
   output$tsFlowPlot = renderPlot({
-    req(nrow(rv$H5) > 1, nrow(tsDF()$flow) > 0)
+    req(isTRUE(nrow(rv$H5) > 1), input$base_scenario, nrow(tsDF()$flow) > 0)
     ts_plot(tsDF()$flow, "Flow (cfs)")
   })
   
   output$tsStagePlot = renderPlot({
-    req(nrow(rv$H5) > 1, nrow(tsDF()$stage) > 0)
+    req(isTRUE(nrow(rv$H5) > 1), input$base_scenario, nrow(tsDF()$stage) > 0)
     ts_plot(tsDF()$stage, "Stage (ft)")
   })
   
@@ -307,7 +310,7 @@ function(input, output, session) {
     toggle("scale_axes", condition = cond)
     toggle("comp_scenario", condition = cond)
   })
-
+  
   observe({ 
     req(rv$NB) 
     cond = input$summ_stat == ""
@@ -587,7 +590,7 @@ function(input, output, session) {
       
       Click on 'Visualize DSM2 Output' to see the default channel map (i.e., before clicking on 'Process DSM2 Output' button).
       
-      The date range is extracted from the earliest and latest date across all uploaded H5 files. Changing the date range allows for zooming in/out on the time series plots. 
+      The date range is extracted from the earliest and latest date across all selected files. Changing the date range allows for zooming in/out on the time series plots. 
 
       DSM2 requires a warm-up period to move away from the initial conditions. The length of this warm-up period is usually only a few days, but varies from channel to channel. It is most noticeable in channels at the edge of the system (e.g., 1, 410).
       

@@ -41,10 +41,10 @@ process_nodes <- function(x){
 }
 
 ts_plot <- function(data, y.lab){
-  p <- ggplot(data, aes(x = Date, y = Value, col = scenario)) +
+  p <- ggplot(data, aes(x = Date, y = Value, col = Scenario)) +
     geom_line(size = 1, alpha = 0.75) +
     labs(y = y.lab) +
-    scale_colour_brewer(name = "Scenario", type = "qual", palette = "Set1") +
+    scale_colour_brewer(type = "qual", palette = "Set1") +
     theme_minimal() +
     theme.mod
   return(p)

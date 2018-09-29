@@ -16,7 +16,7 @@ navbarPage("DSM2 HYDRO Visualization Tool",
                       sidebarPanel(
                         fileInput("h5_files", "Upload H5 files", multiple = TRUE, # multiple upload does not work on older browsers including RSTudio's default viewer
                                   accept = c("application/x-hdf5",".h5")),
-                        hidden(h4(align = "center", style = "color:red",  id = "upload_warn", "Please upload more than one file.")),
+                        hidden(h4(align = "center", style = "color:black",  id = "upload_warn", "Please upload more than one file.")),
                         strong(p(align = "center", "Example H5 files (time interval/zip file size)")),
                         fluidRow(
                           column(6,
@@ -39,14 +39,14 @@ navbarPage("DSM2 HYDRO Visualization Tool",
                                                  selected = "Upstream", justified = TRUE)),
                         br(),
                         p(align = "center", hidden(actionButton(inputId = "proc_dsm2", label = "Process DSM2 Output", icon = icon("paper-plane")))),
-                        hidden(h4(align = "center", style = "color:red",  id = "files_warn", "Please select more than one file."))
+                        hidden(h4(align = "center", style = "color:black",  id = "files_warn", "Please select more than one file."))
                       ),
                       mainPanel(
                         fluidRow(
                           column(1),
                           column(5, 
                                  hidden(checkboxGroupButtons(inputId = "ts_plots", label = "Plots shown", choices = c("Velocity", "Flow", "Stage"), 
-                                                             selected = c("Velocity"),
+                                                             selected = c(""),
                                                              checkIcon = list(yes = icon("ok", lib = "glyphicon"))))
                           ),
                           column(3, 
@@ -55,16 +55,16 @@ navbarPage("DSM2 HYDRO Visualization Tool",
                           ),
                           column(3)
                         ),
-                        conditionalPanel(condition = "input.ts_plots.indexOf('Velocity') > -1",  # should have noted where I found this; I don't know how it works now
-                                         plotOutput("tsVelocityPlot")),
+                        conditionalPanel(condition = "input.ts_plots.indexOf('Velocity') > -1",  # should have noted where I found this; probably checking to make sure not null
+                                         plotOutput("tsVelocityPlot") %>% withSpinner(type = 5)),
                         br(),
                         br(),
                         conditionalPanel(condition = "input.ts_plots.indexOf('Flow') > -1",
-                                         plotOutput("tsFlowPlot")),
+                                         plotOutput("tsFlowPlot") %>% withSpinner(type = 5)),
                         br(),
                         br(),
                         conditionalPanel(condition = "input.ts_plots.indexOf('Stage') > -1",
-                                         plotOutput("tsStagePlot"))
+                                         plotOutput("tsStagePlot") %>% withSpinner(type = 5))
                       )
                     ),
                     # info button placed with absolutePanel() ----------------------------------------------------------------
