@@ -1,0 +1,68 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Class &quot;H5IdComponent&quot;</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for H5IdComponent-class {rhdf5}"><tr><td>H5IdComponent-class {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Class &quot;H5IdComponent&quot;</h2>
+
+<h3>Description</h3>
+
+<p>A class representing a HDF5 identifier handle. HDF5 identifiers represent open files, groups, datasets, dataspaces, attributes, and datatypes. 
+</p>
+
+
+<h3>Objects from the Class</h3>
+
+<p>Objects can be created by calls of <code><a href="H5F.html">H5Fcreate</a></code>, <code><a href="H5F.html">H5Fopen</a></code>, / <code><a href="H5G.html">H5Gcreate</a></code>, <code><a href="H5G.html">H5Gopen</a></code>, /  <code><a href="H5D.html">H5Dcreate</a></code>, <code><a href="H5D.html">H5Dopen</a></code>, \ <code><a href="H5D.html">H5Dget_space</a></code>, <code><a href="H5S.html">H5Screate_simple</a></code>, \ <code><a href="H5A.html">H5Acreate</a></code>, <code><a href="H5A.html">H5Aopen</a></code>.
+</p>
+
+
+<h3>Slots</h3>
+
+
+<dl>
+<dt><code>ID</code>:</dt><dd><p>Object of class <code>"integer"</code>. Contains the handle of C-type hid_t. </p>
+</dd>
+<dt>native</dt><dd><p>An object of class <code>logical</code>. If TRUE, array-like objects are treated as stored in HDF5 row-major rather than R column-major orientation. Using <code>native = TRUE</code> increases HDF5 file portability between programming languages. A file written with <code>native = TRUE</code> should also be read with <code>native = TRUE</code></p>
+</dd></dl>
+<p>.
+
+</p>
+
+
+<h3>Methods</h3>
+
+
+<dl>
+<dt>show</dt><dd><p><code>signature(object = "H5IdComponent")</code>: Shows the filename. </p>
+</dd>
+</dl>
+
+
+
+<h3>Author(s)</h3>
+
+<p>Bernd Fischer</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://www.hdfgroup.org/HDF5">http://www.hdfgroup.org/HDF5</a></p>
+
+
+<h3>See Also</h3>
+
+<p><a href="rhdf5.html">rhdf5</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+showClass("H5IdComponent")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>

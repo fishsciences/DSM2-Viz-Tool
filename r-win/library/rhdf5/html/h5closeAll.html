@@ -1,0 +1,47 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Close all open HDF5 handles</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for h5closeAll {rhdf5}"><tr><td>h5closeAll {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Close all open HDF5 handles</h2>
+
+<h3>Description</h3>
+
+<p>Occasionally references to HDF5 files, groups, datasets etc can be
+created and not closed correctly.  This function identifies all open handles 
+and closes them.  It replaces the functionality previously supplied by 
+<code><a href="H5.html">H5close</a></code>.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+h5closeAll()
+</pre>
+
+
+<h3>Author(s)</h3>
+
+<p>Mike Smith</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+
+## create an empty file and then re-open it
+h5createFile("ex_h5closeAll.h5")
+H5Fopen("ex_h5closeAll.h5")
+
+## list all open identifiers
+h5listIdentifier()
+
+## close all open identifiers and verify
+h5closeAll()
+h5listIdentifier()
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create HDF5 group</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for h5createGroup {rhdf5}"><tr><td>h5createGroup {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create HDF5 group</h2>
+
+<h3>Description</h3>
+
+<p>Creates a group within an HDF5 file.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+h5createGroup (file, group)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>The filename (character) of the file in which the dataset will be located. For advanced programmers it is possible to provide an object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 location identifier (file or group). See <code><a href="H5F.html">H5Fcreate</a></code>, <code><a href="H5F.html">H5Fopen</a></code>, <code><a href="H5G.html">H5Gcreate</a></code>, <code><a href="H5G.html">H5Gopen</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>group</code></td>
+<td>
+<p>The name of the new group. The name can contain a hierarchy of groupnames, e.g. 'group1/group2/newgroup', but the function will fail if the top level group do not exists.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Creates a new group within an HDF5 file. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns TRUE is group was created successfully and FALSE otherwise.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bernd Fischer</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://www.hdfgroup.org/HDF5">http://www.hdfgroup.org/HDF5</a></p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="h5createFile.html">h5createFile</a></code>, <code><a href="h5createDataset.html">h5createDataset</a></code>, <code><a href="h5write.html">h5read</a></code>, <code><a href="h5write.html">h5write</a></code>, <a href="rhdf5.html">rhdf5</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+h5createFile("ex_createGroup.h5")
+
+# create groups
+h5createGroup("ex_createGroup.h5","foo")
+h5createGroup("ex_createGroup.h5","foo/foobaa")
+
+h5ls("ex_createGroup.h5")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>

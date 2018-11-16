@@ -1,0 +1,82 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: HDF5 Dataset Access Property List Interface</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for HDF5 Dataset Access Property List Interface {rhdf5}"><tr><td>HDF5 Dataset Access Property List Interface {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>HDF5 Dataset Access Property List Interface</h2>
+
+<h3>Description</h3>
+
+<p>The functions, macros, and subroutines listed here are used to manipulate dataset access property list objects in various ways, including to reset property values. With the use of property lists, HDF5 functions have been implemented and can be used in applications with many fewer parameters than would be required without property lists.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+H5Pset_chunk_cache                 ( h5plist, rdcc_nslots, rdcc_nbytes, rdcc_w0 )
+
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>h5plist</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 property list identifier of class H5P_DATASET_ACCESS. See <code><a href="H5P.html">H5Pcreate</a></code> or <code><a href="H5P.html">H5Pcopy</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>rdcc_nslots</code></td>
+<td>
+<p>An integer. The number of chunk slots in the raw data chunk cache for this dataset.</p>
+</td></tr>
+<tr valign="top"><td><code>rdcc_nbytes</code></td>
+<td>
+<p>An integer. The total size of the raw data chunk cache for this dataset.</p>
+</td></tr>
+<tr valign="top"><td><code>rdcc_w0</code></td>
+<td>
+<p>double. The chunk preemption policy for this dataset.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Interface to the HDF5 C-library libhdf5. See <a href="http://www.hdfgroup.org/HDF5/doc/RM/RM_H5P.html">http://www.hdfgroup.org/HDF5/doc/RM/RM_H5P.html</a> for further details. See <a href="H5P.html">H5P</a> for documentation of more functions to manupulate property lists of other property list classes. 
+</p>
+
+
+<h3>Value</h3>
+
+<p>The functions return the standard return value from their respective C-functions.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bernd Fischer</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://www.hdfgroup.org/HDF5">http://www.hdfgroup.org/HDF5</a></p>
+
+
+<h3>See Also</h3>
+
+<p><a href="rhdf5.html">rhdf5</a>, <a href="H5P.html">H5P</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+pid &lt;- H5Pcreate("H5P_DATASET_ACCESS")
+H5Pset_chunk_cache( pid, 100, 10000, 0.5)
+H5Pclose(pid)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>

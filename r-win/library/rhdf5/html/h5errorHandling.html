@@ -1,0 +1,66 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: handling of HDF5 error messages</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for h5errorHandling {rhdf5}"><tr><td>h5errorHandling {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>handling of HDF5 error messages</h2>
+
+<h3>Description</h3>
+
+<p>Sets the options for handling HDF5 error messages.</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+h5errorHandling (type="normal")
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>'normal' (default) shows a one line error message in R. 'verbose' shows the whole HDF5 error message. 'suppress' suppresses the HDF5 error messages completely.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Sets the options for HDF5 error hanlding.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns 0 if options are set successfully.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bernd Fischer</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://www.hdfgroup.org/HDF5">http://www.hdfgroup.org/HDF5</a></p>
+
+
+<h3>See Also</h3>
+
+<p><a href="rhdf5.html">rhdf5</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+h5errorHandling("normal")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Package overview</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for rhdf5 {rhdf5}"><tr><td>rhdf5 {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Package overview</h2>
+
+<h3>Description</h3>
+
+<p><code>rhdf5</code> is an interface to the HDF5 library. The R-package contains the complete HDF5 library, thus no further installation of external packages is necessary. 
+</p>
+<p>There are a number of high level R functions that provide a convinient way of accessing HDF5 file as well as R interfaces to a number of functions in the C-library.
+</p>
+
+
+<h3>Package content</h3>
+
+<p>HDF5 file, group, dataset creation
+</p>
+
+<ul>
+<li> <p><code><a href="h5createFile.html">h5createFile</a></code>
+</p>
+</li>
+<li> <p><code><a href="h5createGroup.html">h5createGroup</a></code>
+</p>
+</li>
+<li> <p><code><a href="h5createDataset.html">h5createDataset</a></code>
+</p>
+</li></ul>
+
+<p>HDF5 file content listing
+</p>
+
+<ul>
+<li> <p><code><a href="h5ls.html">h5ls</a></code>
+</p>
+</li>
+<li> <p><code><a href="h5ls.html">h5dump</a></code>
+</p>
+</li></ul>
+
+<p>Reading and writing data
+</p>
+
+<ul>
+<li> <p><code><a href="h5write.html">h5read</a></code>, <code><a href="h5write.html">h5write</a></code>
+</p>
+</li>
+<li> <p><code><a href="h5ls.html">h5dump</a></code>, <code><a href="h5save.html">h5save</a></code>
+</p>
+</li></ul>
+
+<p>HDF5 constants
+</p>
+
+<ul>
+<li> <p><code><a href="h5const.html">h5const</a></code>, <code><a href="h5const.html">h5default</a></code>, <code><a href="h5const.html">h5constType</a></code>
+</p>
+</li></ul>
+
+<p>HDF5 version number
+</p>
+
+<ul>
+<li> <p><code><a href="h5version.html">h5version</a></code>
+</p>
+</li></ul>
+
+<p>Low level interface to HDF5 C-library (for expert users only!):
+</p>
+
+<ul>
+<li><p> general HDF5 functions (<code><a href="H5.html">H5open</a></code> / <code><a href="H5.html">H5close</a></code> / <code><a href="H5.html">H5garbage_collect</a></code> / <code><a href="H5.html">H5get_libversion</a></code>)
+</p>
+</li>
+<li><p> HDF5 File Interface (<code><a href="H5F.html">H5Fcreate</a></code>, <code><a href="H5F.html">H5Fopen</a></code> / <code><a href="H5F.html">H5Fclose</a></code> / <code><a href="H5F.html">H5Fflush</a></code>)
+</p>
+</li>
+<li><p> HDF5 Group Interface (<code><a href="H5G.html">H5Gcreate</a></code>, <code><a href="H5G.html">H5Gcreate_anon</a></code>, <code><a href="H5G.html">H5Gopen</a></code> / <code><a href="H5G.html">H5Gclose</a></code> / <code><a href="H5G.html">H5Gget_info</a></code>, <code><a href="H5G.html">H5Gget_info_by_idx</a></code>, <code><a href="H5G.html">H5Gget_info_by_name</a></code>)
+</p>
+</li>
+<li><p> HDF5 Link Interface (<code><a href="H5L.html">H5Lexists</a></code>, <code><a href="H5L.html">H5Lget_info</a></code>)
+</p>
+</li>
+<li><p> HDF5 Object Interface (<code><a href="H5O.html">H5Oopen</a></code>, <code><a href="H5O.html">H5Oclose</a></code>, <code><a href="H5O.html">H5Oget_num_attrs</a></code>, <code><a href="H5O.html">H5Oget_num_attrs_by_name</a></code>)
+</p>
+</li>
+<li><p> HDF5 Identifier Interface (<code><a href="H5I.html">H5Iget_type</a></code>, <code><a href="H5I.html">H5Iget_name</a></code>, <code><a href="H5I.html">H5Iis_valid</a></code>)
+</p>
+</li>
+<li><p> HDF5 Dataset Interface (<code><a href="H5D.html">H5Dcreate</a></code>, <code><a href="H5D.html">H5Dopen</a></code> / <code><a href="H5D.html">H5Dclose</a></code> / <code><a href="H5D.html">H5Dget_space</a></code> / <code><a href="H5D.html">H5Dread</a></code>, <code><a href="H5D.html">H5Dwrite</a></code>)
+</p>
+</li>
+<li><p> HDF5 Attribute Interface (<code><a href="H5A.html">H5Acreate</a></code>, <code><a href="H5A.html">H5Aopen</a></code>, <code><a href="H5A.html">H5Aopen_by_idx</a></code>, <code><a href="H5A.html">H5Aopen_by_name</a></code> / <code><a href="H5A.html">H5Aclose</a></code>, <code><a href="H5A.html">H5Adelete</a></code> / <code><a href="H5A.html">H5Aexists</a></code> / <code><a href="H5A.html">H5Aget_name</a></code>, <code><a href="H5A.html">H5Aget_space</a></code>, <code><a href="H5A.html">H5Aget_type</a></code> / <code><a href="H5A.html">H5Aread</a></code>, <code><a href="H5A.html">H5Awrite</a></code>)
+</p>
+</li>
+<li><p> HDF5 Dataspace Interface (<code><a href="H5S.html">H5Screate</a></code>, <code><a href="H5S.html">H5Screate_simple</a></code>, <code><a href="H5S.html">H5Scopy</a></code> / <code><a href="H5S.html">H5Sclose</a></code> / <code><a href="H5S.html">H5Sis_simple</a></code>, <code><a href="H5S.html">H5Sget_simple_extent_dims</a></code> / <code><a href="H5S.html">H5Sselect_hyperslab</a></code>)
+</p>
+</li>
+<li><p> HDF5 Datatype Interface (<code><a href="H5T.html">H5Tcopy</a></code>, <code><a href="H5T.html">H5Tset_size</a></code>)
+</p>
+</li></ul>
+
+
+
+<h3>Authors</h3>
+
+<p>R-interface by
+</p>
+<p>Bernd Fischer, <a href="mailto:bernd.fischer@embl.de">bernd.fischer@embl.de</a>
+EMBL - European Molecular Biology Laboratory
+Heidelberg
+Germany
+</p>
+<p>The package contains the HDF5 library (<a href="http://www.hdfgroup.org/HDF5">http://www.hdfgroup.org/HDF5</a>).
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+h5createFile("ex_hdf5file.h5")
+
+# create groups
+h5createGroup("ex_hdf5file.h5","foo")
+h5createGroup("ex_hdf5file.h5","foo/foobaa")
+
+# write a matrix
+B = array(seq(0.1,2.0,by=0.1),dim=c(5,2,2))
+attr(B, "scale") &lt;- "liter"
+h5write(B, "ex_hdf5file.h5","foo/B")
+
+# read a matrix
+E = h5read("ex_hdf5file.h5","foo/B")
+
+# list content of hdf5 file
+h5ls("ex_hdf5file.h5")
+
+# write and read submatrix
+h5createDataset("ex_hdf5file.h5", "foo/S", c(5,8), storage.mode = "integer", chunk=c(5,1), level=7)
+h5write(matrix(1:5,nr=5,nc=1), file="ex_hdf5file.h5", name="foo/S", index=list(NULL,1))
+h5read("ex_hdf5file.h5", "foo/S")
+h5read("ex_hdf5file.h5", "foo/S", index=list(2:3,2:3))
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>

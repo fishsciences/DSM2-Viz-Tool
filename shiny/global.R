@@ -32,6 +32,13 @@ library(lubridate)
 library(shinyjs)
 library(scales)
 
+# on windows system uses Cairo for anti-aliasing of plots
+# is not a problem when run on windows system through R but was a problem with built app
+if (.Platform[["OS.type"]] == "windows"){
+  library(Cairo)
+  options(shiny.usecairo=T)
+}
+
 source("helper.R")
 
 shp = rgdal::readOGR(dsn = "./shapefiles", layer="FlowlinesLatLong")

@@ -1,0 +1,209 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Reads and write object in HDF5 files</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for h5write {rhdf5}"><tr><td>h5write {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Reads and write object in HDF5 files</h2>
+
+<h3>Description</h3>
+
+<p>Reads and writes objects in HDF5 files. This function can be used to read and write either full arrays/vectors or subarrays (hyperslabs) within an existing dataset.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+h5read                      (file, name, index=NULL,
+                             start=NULL, stride=NULL, block=NULL,
+                             count=NULL, compoundAsDataFrame = TRUE,
+                             callGeneric = TRUE,
+                             read.attributes = FALSE, drop = FALSE,
+                             ..., native = FALSE)
+h5readAttributes            (file, name, native = FALSE)
+h5write                     (obj, file, name, ...)
+h5write.default             (obj, file, name, 
+                             createnewfile = TRUE,
+                             write.attributes = FALSE, ...,
+                             native = FALSE)
+h5writeDataset              (obj, h5loc, name, ...)
+h5writeDataset.data.frame   (obj, h5loc, name, level=7,
+                             DataFrameAsCompound = TRUE)
+h5writeDataset.list         (obj, h5loc, name, level=7)
+h5writeDataset.matrix       (...)
+h5writeDataset.integer      (...)
+h5writeDataset.double       (...)
+h5writeDataset.logical      (...)
+h5writeDataset.character    (...)
+h5writeDataset.array        (obj, h5loc, name, index = NULL,
+                             start=NULL, stride=NULL, block=NULL, count=NULL,
+                             size=NULL, level=7)
+h5writeAttribute            (attr, h5obj, name, ...)
+h5writeAttribute.matrix     (...)
+h5writeAttribute.integer    (...)
+h5writeAttribute.double     (...)
+h5writeAttribute.logical    (...)
+h5writeAttribute.character  (...)
+h5writeAttribute.array      (attr, h5obj, name, size)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>obj</code></td>
+<td>
+<p>The R object to be written.</p>
+</td></tr>
+<tr valign="top"><td><code>attr</code></td>
+<td>
+<p>The R object to be written as an HDF5 attribute.</p>
+</td></tr>
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>The filename (character) of the file in which the dataset will be located. For advanced programmers it is possible to provide an object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 location identifier (file or group). See <code><a href="H5F.html">H5Fcreate</a></code>, <code><a href="H5F.html">H5Fopen</a></code>, <code><a href="H5G.html">H5Gcreate</a></code>, <code><a href="H5G.html">H5Gopen</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>h5loc</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 location identifier (file or group). See <code><a href="H5F.html">H5Fcreate</a></code>, <code><a href="H5F.html">H5Fopen</a></code>, <code><a href="H5G.html">H5Gcreate</a></code>, <code><a href="H5G.html">H5Gopen</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>h5obj</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 object identifier (file, group, or dataset). See <code><a href="H5F.html">H5Fcreate</a></code>, <code><a href="H5F.html">H5Fopen</a></code>, <code><a href="H5G.html">H5Gcreate</a></code>, <code><a href="H5G.html">H5Gopen</a></code>, <code><a href="H5D.html">H5Dcreate</a></code>, or <code><a href="H5D.html">H5Dopen</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>The name of the dataset in the HDF5 file. The name of the attribute for hwriteAttribute.</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+<p>List of indices for subsetting. The length of the list has to agree with the dimensional extension of the HDF5 array. Each list element is an integer vector of indices. A list element equal to NULL choses all indices in this dimension. Counting is R-style 1-based.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>The start coordinate of a hyperslab (similar to subsetting in R). Counting is R-style 1-based. This argument is ignored, if index is not NULL.</p>
+</td></tr>
+<tr valign="top"><td><code>stride</code></td>
+<td>
+<p>The stride of the hypercube. Read the introduction <a href="http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html">http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html</a> before using this argument. R behaves like Fortran in this example. This argument is ignored, if index is not NULL.</p>
+</td></tr>
+<tr valign="top"><td><code>block</code></td>
+<td>
+<p>The block size of the hyperslab. Read the introduction <a href="http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html">http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html</a> before using this argument. R behaves like Fortran in this example. This argument is ignored, if index is not NULL.</p>
+</td></tr>
+<tr valign="top"><td><code>count</code></td>
+<td>
+<p>The number of blocks to be written. This argument is ignored, if index is not NULL.</p>
+</td></tr>
+<tr valign="top"><td><code>level</code></td>
+<td>
+<p>The compression level. An integer value between 0 (no compression) and 9 (highest and slowest compression). Only used, if the dataset does not yet exist. See <code><a href="h5createDataset.html">h5createDataset</a></code> to create an dataset.</p>
+</td></tr>
+<tr valign="top"><td><code>native</code></td>
+<td>
+<p>An object of class <code>logical</code>. If TRUE, array-like objects are treated as stored in HDF5 row-major rather than R column-major orientation. Using <code>native = TRUE</code> increases HDF5 file portability between programming languages. A file written with <code>native = TRUE</code> should also be read with <code>native = TRUE</code></p>
+</td></tr></table>
+<p>.
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>compoundAsDataFrame</code></td>
+<td>
+<p>If true, a compound datatype will be coerced to a data.frame. This is not possible, if the dataset is multi-dimensional. Otherwise the compound datatype will be returned as a list. Nested compound data types will be returned as a nested list.</p>
+</td></tr>
+<tr valign="top"><td><code>DataFrameAsCompound</code></td>
+<td>
+<p>If true, a data.frame will be saved as a compound data type. Otherwise it is saved like a list. The advantage of saving a data.frame as a compound data type is that it can be read as a table from python or with a struct-type from C. The disadvantage is that the data has to be rearranged on disk and thus can slow down I/O. If fast reading is required, DataFrameAsCompound=FALSE is recommended.</p>
+</td></tr>
+<tr valign="top"><td><code>callGeneric</code></td>
+<td>
+<p>If TRUE a generic function h5read.classname will be called if it exists depending on the dataset's class attribute within the HDF5 file. This function can be used to convert the standard output of h5read depending on the class attribute. Note that h5read is not a S3 generic function. Dispatching is done based on the HDF5 attribute after the standard h5read function.</p>
+</td></tr>
+<tr valign="top"><td><code>size</code></td>
+<td>
+<p>The length of string data type. Variable lengt strings are not yet supported.</p>
+</td></tr>
+<tr valign="top"><td><code>createnewfile</code></td>
+<td>
+<p>If TRUE, a new file will be created if necessary.</p>
+</td></tr>
+<tr valign="top"><td><code>read.attributes</code></td>
+<td>
+<p>(logical) If TRUE, the HDF5 attributes are read and attached to the respective R object.</p>
+</td></tr>
+<tr valign="top"><td><code>drop</code></td>
+<td>
+<p>(logical) If TRUE, the HDF5 object is read as a vector with NULL dim attributes.</p>
+</td></tr>
+<tr valign="top"><td><code>write.attributes</code></td>
+<td>
+<p>(logical) If TRUE, all R-attributes attached to the object <code>obj</code> are written to the HDF5 file.</p>
+</td></tr>
+<tr valign="top"><td><code>...</code></td>
+<td>
+<p>Further arguments passed to <code><a href="H5D.html">H5Dread</a></code>.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Read/writes an R object from/to an HDF5 file. If neither of the arguments <code>start, stride, block, count</code> is specified, the dataset has the same dimension in the HDF5 file and in memory. If the dataset already exists in the HDF5 file, one can read/write subarrays, so called hyperslabs from/to the HDF5 file. The arguments <code>start, stride, block, count</code> define the subset of the dataset in the HDF5 file that is to be read/written. See these introductions to hyperslabs: <a href="http://www.hdfgroup.org/HDF5/Tutor/selectsimple.html">http://www.hdfgroup.org/HDF5/Tutor/selectsimple.html</a>, <a href="http://www.hdfgroup.org/HDF5/Tutor/select.html">http://www.hdfgroup.org/HDF5/Tutor/select.html</a> and <a href="http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html">http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html</a>. Please note that in R the first dimension is the fastest changing dimension.
+</p>
+<p>When viewing the HDF5 datasets with any C-program (e.g. HDFView), the order of dimensions is inverted. In the R interface counting starts with 1, whereas in the C-programs (e.g. HDFView) counting starts with 0.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>h5read</code> returns an array with the data read. 
+</p>
+<p><code>h5readAttributes</code> returns a list of all HDF5 attributes of object <code>name</code>.
+</p>
+<p><code>h5write</code> returns 0 if successful.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bernd Fischer</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://www.hdfgroup.org/HDF5">http://www.hdfgroup.org/HDF5</a></p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="h5ls.html">h5ls</a></code>, <code><a href="h5createFile.html">h5createFile</a></code>, <code><a href="h5createDataset.html">h5createDataset</a></code>, <a href="rhdf5.html">rhdf5</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+h5createFile("ex_hdf5file.h5")
+
+# write a matrix
+B = array(seq(0.1,2.0,by=0.1),dim=c(5,2,2))
+attr(B, "scale") &lt;- "liter"
+h5write(B, "ex_hdf5file.h5","B")
+
+# read a matrix
+E = h5read("ex_hdf5file.h5","B")
+
+# write and read submatrix
+h5createDataset("ex_hdf5file.h5", "S", c(5,8), storage.mode = "integer", chunk=c(5,1), level=7)
+h5write(matrix(1:5,nr=5,nc=1), file="ex_hdf5file.h5", name="S", index=list(NULL,1))
+h5read("ex_hdf5file.h5", "S")
+h5read("ex_hdf5file.h5", "S", index=list(NULL,2:3))
+
+# list content of hdf5 file
+h5ls("ex_hdf5file.h5")
+
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>

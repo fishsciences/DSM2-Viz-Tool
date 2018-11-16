@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: HDF5 Dataset Interface</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for HDF5 Dataset Interface {rhdf5}"><tr><td>HDF5 Dataset Interface {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>HDF5 Dataset Interface</h2>
+
+<h3>Description</h3>
+
+<p>These functions create and manipulate dataset objects, and set and retrieve their constant or persistent properties.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+H5Dcreate           (h5loc, name, dtype_id, h5space, lcpl=NULL, dcpl=NULL, dapl=NULL)
+H5Dopen             (h5loc, name, dapl=NULL)
+H5Dclose            (h5dataset)
+H5Dget_space        (h5dataset)
+H5Dget_type         (h5dataset)
+H5Dget_create_plist (h5dataset)
+H5Dget_storage_size (h5dataset)
+H5Dread             (h5dataset, h5spaceFile = NULL, h5spaceMem = NULL,
+                     buf = NULL, compoundAsDataFrame = TRUE,
+                     bit64conversion, drop = FALSE)
+H5Dwrite            (h5dataset, buf, h5spaceMem = NULL, h5spaceFile = NULL)
+H5Dset_extent       (h5dataset, size)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>h5loc</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 location identifier (file or group). See <code><a href="H5F.html">H5Fcreate</a></code>, <code><a href="H5F.html">H5Fopen</a></code>, <code><a href="H5G.html">H5Gcreate</a></code>, <code><a href="H5G.html">H5Gopen</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>Name of the dataset (character).</p>
+</td></tr>
+<tr valign="top"><td><code>dtype_id</code></td>
+<td>
+<p>A character name of a datatype. See <code>h5const("H5T")</code> for possible datatypes. Can also be an integer representing an HDF5 datatype.</p>
+</td></tr>
+<tr valign="top"><td><code>h5space</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 dataspace. See <code><a href="H5D.html">H5Dget_space</a></code>, <code><a href="H5S.html">H5Screate_simple</a></code>, <code><a href="H5S.html">H5Screate</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>h5dataset</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 dataset. See <code><a href="H5D.html">H5Dcreate</a></code>, <code><a href="H5D.html">H5Dopen</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>h5spaceFile,h5spaceMem</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 dataspace. See <code><a href="H5D.html">H5Dget_space</a></code>, <code><a href="H5S.html">H5Screate_simple</a></code>, <code><a href="H5S.html">H5Screate</a></code> to create an object of this kind. The dimensions of the dataset in the file and in memory. The dimensions in file and in memory are interpreted in an R-like manner. The first dimension is the fastest changing dimension. When reading the file with a C-program (e.g. HDFView) the order of dimensions will invert, because in C the fastest changing dimension is the last one.</p>
+</td></tr>
+<tr valign="top"><td><code>buf</code></td>
+<td>
+<p>Reading and writing buffer containing the data to written/read. When using the buffer for reading, the buffer size has to fit the size of the memory space <code>h5spaceMem</code>. No extra memory will be allocated for the data. A pointer to the same data is returned.</p>
+</td></tr>
+<tr valign="top"><td><code>compoundAsDataFrame</code></td>
+<td>
+<p>If true, a compound datatype will be coerced to a data.frame. This is not possible, if the dataset is multi-dimensional. Otherwise the compound datatype will be returned as a list. Nested compound data types will be returned as a nested list.</p>
+</td></tr>
+<tr valign="top"><td><code>bit64conversion</code></td>
+<td>
+<p>Defines, how 64-bit integers are converted. Internally, R does not support 64-bit integers. All integers in R are 32-bit integers. By setting bit64conversion='int', a coercing to 32-bit integers is enforced, with the risc of data loss, but with the insurance that numbers are represented as integers. bit64conversion='double' coerces the 64-bit integers to floating point numbers. doubles can represent integers with up to 54-bits, but they are not represented as integer values anymore. For larger numbers there is again a data loss. bit64conversion='bit64' is recommended way of coercing. It represents the 64-bit integers as objects of class 'integer64' as defined in the package 'bit64'. Make sure that you have installed 'bit64'. The datatype 'integer64' is not part of base R, but defined in an external package. This can produce unexpected behaviour when working with the data.</p>
+</td></tr>
+<tr valign="top"><td><code>drop</code></td>
+<td>
+<p>(logical) If TRUE, the HDF5 object is read as a vector with NULL dim attributes.</p>
+</td></tr>
+<tr valign="top"><td><code>size</code></td>
+<td>
+<p>An integer vector with the new dimension of the dataset. Calling this function is only valid for chunked datasets.</p>
+</td></tr>
+<tr valign="top"><td><code>lcpl</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 link creation property list. See <code><a href="H5P.html">H5Pcreate</a></code>, <code><a href="H5P.html">H5Pcopy</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>dcpl</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 dataset creation property list. See <code><a href="H5P.html">H5Pcreate</a></code>, <code><a href="H5P.html">H5Pcopy</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>dapl</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 dataset access property list. See <code><a href="H5P.html">H5Pcreate</a></code>, <code><a href="H5P.html">H5Pcopy</a></code> to create an object of this kind.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Interface to the HDF5 C-library libhdf5. See <a href="http://www.hdfgroup.org/HDF5/doc/RM/RM_H5D.html">http://www.hdfgroup.org/HDF5/doc/RM/RM_H5D.html</a> for further details.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>H5Dcreate</code> and <code>H5Dopen</code> return an object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> represinting a H5 dataset identifier.
+</p>
+<p><code>H5Dget_space</code> returns an object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 dataspace identifier.
+</p>
+<p><code>H5Dread</code> returns an array with the read data.
+</p>
+<p>The other functions return the standard return value from their respective C-functions.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bernd Fischer</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://www.hdfgroup.org/HDF5">http://www.hdfgroup.org/HDF5</a></p>
+
+
+<h3>See Also</h3>
+
+<p><a href="rhdf5.html">rhdf5</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# write a dataset
+fid &lt;- H5Fcreate("ex_H5D.h5")
+fid
+sid &lt;- H5Screate_simple(c(10,5,3))
+sid
+did &lt;- H5Dcreate(fid, "A", "H5T_STD_I32LE", sid)
+did
+H5Dwrite(did, 1L:150L, h5spaceMem = sid, h5spaceFile = sid)
+H5Dclose(did)
+H5Sclose(sid)
+H5Fclose(fid)
+
+# read a dataset
+fid &lt;- H5Fopen("ex_H5D.h5")
+fid
+did &lt;- H5Dopen(fid, "A")
+did
+sid &lt;- H5Dget_space(did)
+sid
+B &lt;- H5Dread(did)
+B
+H5Dclose(did)
+H5Sclose(sid)
+H5Fclose(fid)
+
+# write a subarray
+fid &lt;- H5Fopen("ex_H5D.h5")
+fid
+did &lt;- H5Dopen(fid, "A")
+did
+sid &lt;- H5Dget_space(did)
+sid
+H5Sselect_index(sid, list(1:3,2:4,2))
+sidmem &lt;- H5Screate_simple(c(3,3,1))
+sidmem
+A = array(-801:-809,dim=c(3,3,1))
+H5Dwrite(did, A, h5spaceMem = sidmem, h5spaceFile = sid)
+H5Dread(did)
+H5Sclose(sid)
+H5Dclose(did)
+H5Sclose(sidmem)
+H5Fclose(fid)
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>

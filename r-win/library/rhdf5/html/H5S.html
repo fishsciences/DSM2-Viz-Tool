@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: HDF5 Dataspace Interface</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for HDF5 Dataspace Interface {rhdf5}"><tr><td>HDF5 Dataspace Interface {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>HDF5 Dataspace Interface</h2>
+
+<h3>Description</h3>
+
+<p>These functions create and manipulate the dataspace in which to store the elements of a dataset.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+H5Screate                 (type = h5default("H5S"), native = FALSE)
+H5Screate_simple          (dims, maxdims, native = FALSE)
+H5Scopy                   (h5space)
+H5Sclose                  (h5space)
+H5Sis_simple              (h5space)
+H5Sget_simple_extent_dims (h5space)
+H5Sset_extent_simple      (h5space, dims, maxdims)
+H5Sselect_hyperslab       (h5space, op = h5default("H5S_SELECT"), 
+                           start = NULL, stride = NULL, count = NULL,
+                           block = NULL)
+H5Sselect_index           (h5space, index)
+H5Sunlimited              ()
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>type</code></td>
+<td>
+<p>See <code>h5const("H5S")</code> for possible types.</p>
+</td></tr>
+<tr valign="top"><td><code>dims</code></td>
+<td>
+<p>Dimension of the dataspace. This argument is similar to the dim attribute of an array. When viewing the HDF5 dataset with an C-program (e.g. HDFView), the dimensions appear in inverted order, because the fastest changing dimension in R is the first one, and in C its the last one.</p>
+</td></tr>
+<tr valign="top"><td><code>maxdims</code></td>
+<td>
+<p>Maximum extension of the dimension of the dataset in the file. If not provided, it is set to dims.</p>
+</td></tr>
+<tr valign="top"><td><code>native</code></td>
+<td>
+<p>An object of class <code>logical</code>. If TRUE, array-like objects are treated as stored in HDF5 row-major rather than R column-major orientation. Using <code>native = TRUE</code> increases HDF5 file portability between programming languages. A file written with <code>native = TRUE</code> should also be read with <code>native = TRUE</code></p>
+</td></tr></table>
+<p>.
+</p>
+<table summary="R argblock">
+<tr valign="top"><td><code>h5space</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 dataspace identifier. See <code><a href="H5D.html">H5Dget_space</a></code>, <code><a href="H5S.html">H5Screate_simple</a></code>, <code><a href="H5S.html">H5Screate</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>index</code></td>
+<td>
+<p>A list of integer indices. The length of the list corresponds to the number of dimensions of the HDF5 array.</p>
+</td></tr>
+<tr valign="top"><td><code>op</code></td>
+<td>
+<p>See h5const(&quot;H5S_SELECT&quot;) for possible arguments.</p>
+</td></tr>
+<tr valign="top"><td><code>start</code></td>
+<td>
+<p>The start coordinate of a hyperslab (similar to subsetting in R). Counting is R-style 1-based.</p>
+</td></tr>
+<tr valign="top"><td><code>stride</code></td>
+<td>
+<p>The stride of the hypercube. Read the introduction <a href="http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html">http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html</a> before using this argument. R behaves like Fortran in this example.</p>
+</td></tr>
+<tr valign="top"><td><code>count</code></td>
+<td>
+<p>The number of blocks to be written.</p>
+</td></tr>
+<tr valign="top"><td><code>block</code></td>
+<td>
+<p>The block size of the hyperslab. Read the introduction <a href="http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html">http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html</a> before using this argument. R behaves like Fortran in this example.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Interface to the HDF5 C-library libhdf5. See <a href="http://www.hdfgroup.org/HDF5/doc/RM/RM_H5S.html">http://www.hdfgroup.org/HDF5/doc/RM/RM_H5S.html</a> for further details.
+</p>
+<p>As an introduction to use hyperslabs see these tutorials: See these introductions to hyperslabs: <a href="http://www.hdfgroup.org/HDF5/Tutor/selectsimple.html">http://www.hdfgroup.org/HDF5/Tutor/selectsimple.html</a>, <a href="http://www.hdfgroup.org/HDF5/Tutor/select.html">http://www.hdfgroup.org/HDF5/Tutor/select.html</a> and <a href="http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html">http://ftp.hdfgroup.org/HDF5/Tutor/phypecont.html</a>. Please note that in R the first dimension is the fastest changing dimension. When viewing the HDF5 datasets with any C-program (e.g. HDFView), the order of dimensions is inverted. In the R interface counting starts with 1, whereas in the C-programs (e.g. HDFView) counting starts with 0.
+</p>
+<p><code>H5Sselect_index</code>  is not part of the standard HDF5 C interface. It performes an iterative call to H5select_points by iterating through the given index positions. This function avoids a for loop in R. If a list element is NULL, all elements of the respective dimension are considered.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>H5Screate</code>, <code>H5Screate_simple</code>, and <code>H5Scopy</code> return an object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a dataspace.
+</p>
+<p><code>H5Sis_simple</code> returns a boolean.
+</p>
+<p><code>H5Sget_simple_extent_dims</code> returns an integer vector.
+</p>
+<p><code>H5Sunlimited</code> is a simple macro to return the constant <code>H5S_UNLIMITED</code> that can be provided to the <code>maxdims</code> arguments of <code>H5Screate_simple</code> to create and extensible dataspace.
+</p>
+<p>The other functions return the standard return value from their respective C-functions.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bernd Fischer</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://www.hdfgroup.org/HDF5">http://www.hdfgroup.org/HDF5</a></p>
+
+
+<h3>See Also</h3>
+
+<p><a href="rhdf5.html">rhdf5</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+sid &lt;- H5Screate_simple(c(10,5,3))
+sid
+H5Sis_simple(sid)
+H5Sget_simple_extent_dims(sid)
+
+# select a subarray (called hyperslab in the hdf5 community).
+# The next h5write can use this to write a subarray
+H5Sselect_index(sid, list(1:3,2:4,2))
+
+# always close dataspaces after usage to free recources
+H5Sclose(sid)
+sid
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>

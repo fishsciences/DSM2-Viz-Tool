@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: HDF5 Attribute Interface</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for HDF5 Attribute Interface {rhdf5}"><tr><td>HDF5 Attribute Interface {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>HDF5 Attribute Interface</h2>
+
+<h3>Description</h3>
+
+<p>These functions create and manipulate attributes and information about attributes. </p>
+
+
+<h3>Usage</h3>
+
+<pre>
+H5Acreate       (h5obj, name, dtype_id, h5space)
+H5Aclose        (h5attribute)
+H5Adelete       (h5obj, name)
+H5Aexists       (h5obj, name)
+H5Aget_name     (h5attribute)
+H5Aget_space    (h5attribute)
+H5Aget_type     (h5attribute)
+H5Aopen         (h5obj, name)
+H5Aopen_by_idx  (h5obj, n, objname = ".", index_type = h5default("H5_INDEX"), 
+                 order = h5default("H5_ITER"))
+H5Aopen_by_name (h5obj, objname = ".", name)
+H5Aread         (h5attribute, buf = NULL)
+H5Awrite        (h5attribute, buf)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>h5obj</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 object identifier (file, group, or dataset). See <code><a href="H5F.html">H5Fcreate</a></code>, <code><a href="H5F.html">H5Fopen</a></code>, <code><a href="H5G.html">H5Gcreate</a></code>, <code><a href="H5G.html">H5Gopen</a></code>, <code><a href="H5D.html">H5Dcreate</a></code>, or <code><a href="H5D.html">H5Dopen</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>name</code></td>
+<td>
+<p>The name of the attribute (character).</p>
+</td></tr>
+<tr valign="top"><td><code>dtype_id</code></td>
+<td>
+<p>A character name of a datatype. See <code>h5const("H5T")</code> for possible datatypes. Can also be an integer representing an HDF5 datatype. Only simple datatypes are allowed for atttributes.</p>
+</td></tr>
+<tr valign="top"><td><code>h5space</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 dataspace. See <code><a href="H5D.html">H5Dget_space</a></code>, <code><a href="H5S.html">H5Screate_simple</a></code>, <code><a href="H5S.html">H5Screate</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>h5attribute</code></td>
+<td>
+<p>An object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> represnting a H5 attribute as created by <code>H5Acreate</code> or <code>H5Aopen</code></p>
+</td></tr>
+<tr valign="top"><td><code>n</code></td>
+<td>
+<p>Opens attribute number n in the given order and index. The first attribute is opened with n=0.</p>
+</td></tr>
+<tr valign="top"><td><code>objname</code></td>
+<td>
+<p>The name of the object the attribute belongs to.</p>
+</td></tr>
+<tr valign="top"><td><code>index_type</code></td>
+<td>
+<p>See <code>h5const("H5_INDEX")</code> for possible arguments.</p>
+</td></tr>
+<tr valign="top"><td><code>order</code></td>
+<td>
+<p>See <code>h5const("H5_ITER")</code> for possible arguments.</p>
+</td></tr>
+<tr valign="top"><td><code>buf</code></td>
+<td>
+<p>Reading and writing buffer containing the data to written/read. When using the buffer for reading, the buffer size has to fit the size of the memory space <code>h5spaceMem</code>. No extra memory will be allocated for the data. A pointer to the same data is returned.</p>
+</td></tr>
+</table>
+
+
+<h3>Details</h3>
+
+<p>Interface to the HDF5 C-library libhdf5. See <a href="http://www.hdfgroup.org/HDF5/doc/RM/RM_H5A.html">http://www.hdfgroup.org/HDF5/doc/RM/RM_H5A.html</a> for further details.
+</p>
+
+
+<h3>Value</h3>
+
+<p><code>H5Acreate</code>, <code>H5Aopen</code>, <code>H5Aopen_by_name</code>, <code>H5Aopen_by_idx</code>  return an object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 attribute identifier.
+</p>
+<p><code>H5Aget_space</code> returns an object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 dataspace identifier.
+</p>
+<p><code>H5Aread</code> returns an array with the read data.
+</p>
+<p>The other functions return the standard return value from their respective C-functions.
+</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bernd Fischer</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://www.hdfgroup.org/HDF5">http://www.hdfgroup.org/HDF5</a></p>
+
+
+<h3>See Also</h3>
+
+<p><a href="rhdf5.html">rhdf5</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+# create a file and write something
+h5createFile("ex_H5A.h5")
+h5write(1:15, "ex_H5A.h5","A")
+
+# write an attribute 'unit' to 'A'
+fid &lt;- H5Fopen("ex_H5A.h5")
+did &lt;- H5Dopen(fid, "A")
+sid &lt;- H5Screate_simple(c(1,1))
+tid &lt;- H5Tcopy("H5T_C_S1")
+
+H5Tset_size(tid, 10L)
+aid &lt;- H5Acreate(did, "unit", tid, sid)
+aid
+H5Awrite(aid, "liter")
+H5Aclose(aid)
+H5Sclose(sid)
+H5Aexists(did, "unit")
+H5Dclose(did)
+H5Fclose(fid)
+h5dump("ex_H5A.h5")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>

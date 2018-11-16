@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>R: Create HDF5 dataset</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+
+<table width="100%" summary="page for h5createDataset {rhdf5}"><tr><td>h5createDataset {rhdf5}</td><td style="text-align: right;">R Documentation</td></tr></table>
+
+<h2>Create HDF5 dataset</h2>
+
+<h3>Description</h3>
+
+<p>R function to create an HDF5 dataset and defining its dimensionality and compression behaviour.
+</p>
+
+
+<h3>Usage</h3>
+
+<pre>
+h5createDataset (file, dataset, 
+		dims, maxdims = dims, 
+		storage.mode = "double", H5type = NULL, 
+		size = NULL, chunk = dims, level = 6,
+		fillValue,
+                showWarnings = TRUE, native = FALSE)
+</pre>
+
+
+<h3>Arguments</h3>
+
+<table summary="R argblock">
+<tr valign="top"><td><code>file</code></td>
+<td>
+<p>The filename (character) of the file in which the dataset will be located. For advanced programmers it is possible to provide an object of class <code><a href="H5IdComponent-class.html">H5IdComponent</a></code> representing a H5 location identifier (file or group). See <code><a href="H5F.html">H5Fcreate</a></code>, <code><a href="H5F.html">H5Fopen</a></code>, <code><a href="H5G.html">H5Gcreate</a></code>, <code><a href="H5G.html">H5Gopen</a></code> to create an object of this kind.</p>
+</td></tr>
+<tr valign="top"><td><code>dataset</code></td>
+<td>
+<p>Name of the dataset to be created. The name can contain group names, e.g. 'group/dataset', but the function will fail, if the group does not yet exist.</p>
+</td></tr>
+<tr valign="top"><td><code>dims</code></td>
+<td>
+<p>The dimensions of the array as they will appear in the file. Note, the dimensions will appear in inverted order when viewing the file with a C-programm (e.g. HDFView), because the fastest changing dimension in R is the first one, whereas the fastest changing dimension in C is the last one.</p>
+</td></tr>
+<tr valign="top"><td><code>maxdims</code></td>
+<td>
+<p>The maximum extension of the array. Use <code>H5Sunlimited()</code> to indicate an extensible dimension.</p>
+</td></tr>
+<tr valign="top"><td><code>storage.mode</code></td>
+<td>
+<p>The storage mode of the data to be written. Can be obtained by <code>storage.mode(mydata)</code>.</p>
+</td></tr>
+<tr valign="top"><td><code>H5type</code></td>
+<td>
+<p>Advanced programmers can specify the datatype of the dataset within the file. See <code>h5const("H5T")</code> for a list of available datatypes. If <code>H5type</code> is specified the argument <code>storage.mode</code> is ignored. It is recommended to use <code>storage.mode</code></p>
+</td></tr>
+<tr valign="top"><td><code>size</code></td>
+<td>
+<p>For <code>storage.mode='character'</code> the maximum string length has to be specified. Note that HDF5 automatically adds a null terminator to strings, thus the value provided here should be the length of the longest string plus one.  HDF5 then stores the string as fixed length character vectors. Together with compression, this should be efficient.</p>
+</td></tr>
+<tr valign="top"><td><code>chunk</code></td>
+<td>
+<p>The chunk size used to store the dataset. It is an integer vector of the same length as <code>dims</code>. This argument is usually set together with a compression property (argument <code>level</code>). </p>
+</td></tr>
+<tr valign="top"><td><code>level</code></td>
+<td>
+<p>The compression level used. An integer value between 0 (no compression) and 9 (highest and slowest compression).</p>
+</td></tr>
+<tr valign="top"><td><code>fillValue</code></td>
+<td>
+<p>Standard value for filling the dataset. The storage.mode of value has to be convertable to the dataset type by HDF5.</p>
+</td></tr>
+<tr valign="top"><td><code>showWarnings</code></td>
+<td>
+<p>If TRUE (default), a warning is given if the chunk size is equal to the dataset dimension for large compressed datasets.</p>
+</td></tr>
+<tr valign="top"><td><code>native</code></td>
+<td>
+<p>An object of class <code>logical</code>. If TRUE, array-like objects are treated as stored in HDF5 row-major rather than R column-major orientation. Using <code>native = TRUE</code> increases HDF5 file portability between programming languages. A file written with <code>native = TRUE</code> should also be read with <code>native = TRUE</code></p>
+</td></tr></table>
+<p>.
+</p>
+
+
+<h3>Details</h3>
+
+<p>Creates a new dataset. in an existing HDF5 file. The function will fail, if the file doesn't exist or if there exists already another dataset with the same name within the specified file.
+</p>
+
+
+<h3>Value</h3>
+
+<p>Returns TRUE is dataset was created successfully and FALSE otherwise.</p>
+
+
+<h3>Author(s)</h3>
+
+<p>Bernd Fischer</p>
+
+
+<h3>References</h3>
+
+<p><a href="http://www.hdfgroup.org/HDF5">http://www.hdfgroup.org/HDF5</a></p>
+
+
+<h3>See Also</h3>
+
+<p><code><a href="h5createFile.html">h5createFile</a></code>, <code><a href="h5createGroup.html">h5createGroup</a></code>, <code><a href="h5write.html">h5read</a></code>, <code><a href="h5write.html">h5write</a></code>, <a href="rhdf5.html">rhdf5</a>
+</p>
+
+
+<h3>Examples</h3>
+
+<pre>
+h5createFile("ex_createDataset.h5")
+
+# create dataset with compression
+h5createDataset("ex_createDataset.h5", "A", c(5,8), storage.mode = "integer", chunk=c(5,1), level=7)
+
+# create dataset without compression
+h5createDataset("ex_createDataset.h5", "B", c(5,8), storage.mode = "integer")
+h5createDataset("ex_createDataset.h5", "C", c(5,8), storage.mode = "double")
+
+# create a dataset of strings &amp; define size to include null terminator
+ex_strings &lt;- c('long', 'longer', 'longest')
+h5createDataset("ex_createDataset.h5", "D",  
+    storage.mode = "character", chunk = 3, level = 6,
+    dims = length(ex_strings), size = max(nchar(ex_strings)) + 1)
+
+
+# write data to dataset
+h5write(matrix(1:40,nr=5,nc=8), file="ex_createDataset.h5", name="A")
+# write second column
+h5write(matrix(1:5,nr=5,nc=1), file="ex_createDataset.h5", name="B", index=list(NULL,2))
+# write character vector
+h5write(ex_strings, file = "ex_createDataset.h5", name = "D")
+
+h5dump("ex_createDataset.h5")
+</pre>
+
+<hr /><div style="text-align: center;">[Package <em>rhdf5</em> version 2.26.0 <a href="00Index.html">Index</a>]</div>
+</body></html>
