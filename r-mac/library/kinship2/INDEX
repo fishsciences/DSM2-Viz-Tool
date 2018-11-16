@@ -1,0 +1,29 @@
+align.pedigree          Generate plotting information for a pedigree
+autohint                Align a pedigree to print well
+bitSize                 Calculate pedigree bitsize, defined as 2 * #
+                        NonFounders - # Founders
+familycheck             Error check for a family classification
+findAvailAffected       Find a single person to trim from a pedigree
+                        whose is available
+findAvailNonInform      Find subjects from a pedigree who are available
+                        and uninformative
+findUnavailable         Find unavailable subjects in a pedigree
+ibdMatrix               Create an IBD matrix
+kindepth                Compute the depth of each subject in a pedigree
+kinship                 Compute a kinship matrix
+makefamid               Construct a family id from pedigree information
+makekinship             Create a sparse kinship matrix
+minnbreast              Minnesota Breast Cancer Study
+pedigree                Create pedigree structure
+pedigree.legend         Plot a pedigree legend
+pedigree.shrink         Trim a pedigree to specified bit size with
+                        priority placed on trimming uninformative
+                        subjects.
+pedigree.unrelated      Determine set of maximum number of unrelated
+                        available subjects from a pedigree
+plot.pedigree           plot pedigrees
+plot.pedigree.shrink    plot pedigree.shrink object that is a shrunk
+                        pedigree object
+printBanner             Print a nice banner
+sample.ped              Two example pedigrees
+testped1                testped1

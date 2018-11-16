@@ -1,0 +1,5 @@
+Rhdf5lib                Rhdf5lib: A version of the HDF5 library built
+                        into an R package.
+getHdf5Version          Report the version of HDF5 distributed with
+                        this package
+pkgconfig               Compiler arguments for using Rhdf5lib
