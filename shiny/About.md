@@ -26,7 +26,7 @@ The map color is scaled by the absolute difference or proportion overlap value f
 
 #### Bug Reports and Feature Requests
 
-This app has only be tested on a small number of DSM2 output files. Please don't hesitate to contact us (see below) with bug reports and feature requests or file an issue on the <a href="https://github.com/fishsciences/DSM2-Viz-Tool/issues" target="_blank">GitHub repository</a>.
+Contact us (see below) with bug reports and feature requests or file an issue on the <a href="https://github.com/fishsciences/DSM2-Viz-Tool/issues" target="_blank">GitHub repository</a>.
 
 <br>
 <center>Contact [Brad Cavallo](bcavallo@fishsciences.net) or [Travis Hinkelman](travis.hinkelman@fishsciences.net) with questions.</center>

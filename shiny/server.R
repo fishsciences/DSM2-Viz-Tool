@@ -1,236 +1,441 @@
 function(input, output, session) {
   
   # Reactive values ----------------------------------------------------------------
-  rv <- reactiveValues(H5 = NULL, AD = NULL, PO = NULL, DN = NULL, SS = NULL, B = NULL, NB = NULL, DC = NULL) # DC = deleted channels 
+  # dlwy = date list water year; drr = date range read; cl = channel list; acc = all common channels
+  rv <- reactiveValues(H5 = NULL, H5META = NULL, STAGE = NULL, FLOW = NULL, AREA = NULL, VELOCITY = NULL, DLWY = NULL, DRR = NULL, CL = NULL, ACC = NULL, 
+                       # AD = absolute difference; PO = proportion overlap; DN = density; SS = summary stats; B = base scenario; NB = non-base scenarios; DC = deleted channels 
+                       AD = NULL, PO = NULL, DN = NULL, SS = NULL, B = NULL, NB = NULL, DC = NULL) 
   
-  # Process Output ----------------------------------------------------------------
+  # Exploratory ----------------------------------------------------------------
   
-  # * dynamic UI ----------------------------------------------------------------
+  # * Metadata tab ----------------------------------------------------------------
   
-  observe({
-    # several UI elements are initially hidden; shown after files uploaded
-    cond = !is.null(rv$H5) & isTRUE(nrow(rv$H5) > 1)  # when rv$H5 is null, 2nd condition returns 'logical(0)'; need to wrap in isTRUE to get it to return FALSE
-    toggle("sel_scenarios", condition = cond)
-    toggle("base_scenario", condition = cond)
-    toggle("date_range", condition = cond)
-    toggle("nodes", condition = cond)
-    toggle("ts_plots", condition = cond)
-    toggle("ts_channel", condition = cond)
+  # ** select files ----------------------------------------------------------------
+  
+  volumes <- c(Home = fs::path_home(), getVolumes()())
+  shinyFileChoose(input, "h5_files", roots = volumes, filetypes = c("h5"), session = session)
+  
+  filePaths <- reactive({
+    rv[["H5"]] = NULL   # reset rv[["H5"]]; only relevant if user selects files multiple times in a session
+    parseFilePaths(volumes, input[["h5_files"]])
   })
   
   observe({
-    req(rv$H5, isTRUE(nrow(rv$H5) > 1), input$sel_scenarios, input$base_scenario)
-    toggle("proc_dsm2", condition = length(input$sel_scenarios) > 1)
+    req(isTRUE(nrow(filePaths()) > 0))
+    rv[["H5"]] = mutate(filePaths(), scenario = gsub(pattern = ".h5", replacement = "", x = name))
   })
   
-  observe({
-    req(rv$H5)
-    toggle("upload_warn", condition = nrow(rv$H5) < 2)
+  # ** metadata ----------------------------------------------------------------
+  
+  h5Metadata <- reactive({
+    req(rv[["H5"]])
+    # extract metadata; h5_read_attr() is wrapper to h5readAttributes (see helper.R) 
+    out = rv[["H5"]] %>% 
+      as_tibble() %>% 
+      left_join(h5_read_attr(rv[["H5"]], "/data/channel flow", "start_time", "start_date"), by = "scenario") %>%
+      left_join(h5_read_attr(rv[["H5"]], "/data/channel flow", "interval", "interval"), by = "scenario") %>% 
+      left_join(h5_read_attr(rv[["H5"]], "", "Number of channels", "num_channels"), by = "scenario") %>% 
+      left_join(h5_read_attr(rv[["H5"]], "", "Number of intervals", "num_intervals"), by = "scenario") %>% 
+      # adapted from https://stackoverflow.com/questions/36354225/insert-a-space-in-a-string-containing-alphanumeric-characters-at-the-beginning-a
+      mutate(interval = gsub("(\\d+)", "\\1 ", interval), 
+             end_date = calc_end_date(start_date, num_intervals, interval),
+             start_date = ymd_hms(start_date),
+             end_date = ymd_hms(end_date),
+             start_wy = water_year(start_date),
+             end_wy = water_year(end_date))
+    h5closeAll()
+    return(out)
   })
   
-  observe({
-    sc = rv$H5$scenario
-    updatePickerInput(session, "sel_scenarios", choices = sc, selected = sc)
+  output$metadataTable = renderDT({
+    h5Metadata() %>% 
+      mutate(start_date = as.character(start_date),
+             end_date = as.character(end_date)) %>% 
+      select(Scenario = scenario, `Start Date` = start_date, `End Date` = end_date,
+             Interval = interval, Channels = num_channels)},
+    style = "bootstrap", rownames = FALSE, caption = "Table 1. Basic metadata for selected HDF5 files.",
+    options = list(searching = FALSE, bPaginate = FALSE, info = FALSE, scrollX = TRUE)
+  )
+  
+  # ** dates ----------------------------------------------------------------
+  
+  waterYears <- reactive({
+    d = h5Metadata()
+    out = c()
+    for (i in 1:nrow(d)){
+      out = c(out, d[["start_wy"]][i]:d[["end_wy"]][i])
+    }
+    return(sort(out[!duplicated(out)], decreasing = TRUE))
   })
   
-  observe({
-    updatePickerInput(session, "base_scenario", choices = input$sel_scenarios)
+  wyInteger <- reactive({
+    as.integer(input[["sel_water_year"]])
   })
   
-  observe({
-    ad = do.call("c", datesList()) # ad = all dates; not sure if this is best way to concatenate list of dates, but unlist loses date formatting
-    updateDateRangeInput(session, "date_range",
-                         start = min(ad), end = max(ad),
-                         min = min(ad), max = max(ad))
-    updateCheckboxGroupButtons(session, "ts_plots", selected = "Velocity") # if velocity is selected in ui.R, then cssloader shows up when page is first loaded
+  datesListWaterYear <- reactive({
+    # banged my head against the wall for a long time with this one
+    # input[["sel_water_year"]] should update when waterYears() changes but
+    # if you select a new set of files, then the input[["sel_water_year"]] update lags and the old water year is used, which causes the app to crash
+    # all of that is avoided with the 2nd condition in this req() statement
+    req(input[["sel_water_year"]], input[["sel_water_year"]] %in% waterYears())  
+    d = h5Metadata()
+    wy = wyInteger()
+    wydr = ymd_hms(paste0(c(wy - 1L, wy), c("-10-01 00:00:00", "-09-30 23:59:59")))
+    out = list()
+    for (i in 1:nrow(d)){
+      if (wy >= d[["start_wy"]][i] & wy <= d[["end_wy"]][i]){
+        # this first_date/last_date stuff is for scenario where start and end dates are less than a full water year
+        first_date = if_else(d[["start_date"]][i] > wydr[1], d[["start_date"]][i], wydr[1])
+        last_date = if_else(d[["end_date"]][i] < wydr[2], d[["end_date"]][i], wydr[2])
+        out[[d[["scenario"]][i]]] = tibble(Date = seq(from = first_date, to = last_date, by = d[["interval"]][i]),
+                                           Index = get_date_indexes(d[["start_date"]][i], first_date, last_date, d[["interval"]][i]))
+      }
+    }
+    return(out)
   })
   
-  observe({
-    ac = availableChannels()[!(availableChannels() %in% rv$DC)] 
-    updatePickerInput(session, "ts_channel", choices = ac, selected = input$map_channel)
+  drrPOSIX <- reactive({
+    # date range doesn't include times; setting datetime to max possible duration
+    ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
   })
   
-  observe({
-    ac = availableChannels()[!(availableChannels() %in% rv$DC)] 
-    updatePickerInput(session, "map_channel", choices = ac, selected = input$ts_channel)
+  datesListWaterYearSub <- reactive({
+    drr = drrPOSIX()
+    dlwy = datesListWaterYear()
+    out = list()
+    for (i in names(dlwy)){
+      out[[i]] = filter(dlwy[[i]], Date >= drr[1] & Date <= drr[2])
+      # After reading data, the original index will be lost; need new index for subsetting data in visualization step 
+      out[[i]][["SubIndex"]] = if (nrow(out[[i]]) > 0) 1:length(out[[i]][["Date"]]) else NULL 
+    }
+    return(out)
   })
   
-  observe({
-    req(rv$H5, isTRUE(nrow(rv$H5) > 1), input$sel_scenarios)
-    toggle("files_warn", condition = length(input$sel_scenarios) < 2)
+  datesTibbleWaterYear <- reactive({
+    bind_rows(datesListWaterYear(), .id = "Scenario")
   })
   
-  # * upload  ----------------------------------------------------------------
+  # ** intervals ----------------------------------------------------------------
   
-  observe({
-    req(input$h5_files)
-    rv$H5 = mutate(input$h5_files, scenario = gsub(pattern = ".h5", replacement = "", x = name))
+  intervals <- reactive({
+    req(input[["sel_water_year"]], input[["sel_water_year"]] %in% waterYears())
+    d = h5Metadata()
+    wy = wyInteger()
+    drr = drrPOSIX()
+    out = list()
+    for (i in 1:nrow(d)){
+      if (wy >= d[["start_wy"]][i] & wy <= d[["end_wy"]][i]){
+        first_date = if_else(d[["start_date"]][i] > drr[1], d[["start_date"]][i], drr[1])
+        last_date = if_else(d[["end_date"]][i] < drr[2], d[["end_date"]][i], drr[2])
+        int_num = get_interval_number(first_date, last_date, d[["interval"]][i])
+        d[["num_intervals_in_range"]][i] = ifelse(int_num < 0, 0, int_num)
+      }else{
+        d[["num_intervals_in_range"]][i] = 0 # if selected water year is outside of range of water years in a file, then zero intervals are in the date range
+      }
+    }
+    return(d)
   })
   
-  nonBase <- reactive({
-    # names of scenarios that were selected as baseline scenario
-    req(input$base_scenario, input$sel_scenarios)
-    input$sel_scenarios[input$sel_scenarios != input$base_scenario]
+  intervalSub <- reactive({
+    intervals() %>% filter(num_intervals_in_range > 1)
   })
   
-  # * extract ----------------------------------------------------------------
+  output$intervalTable = renderDT({
+    intervals() %>% 
+      select(Scenario = scenario, `Total Intervals` = num_intervals, `Intervals in Date Range` = num_intervals_in_range)},
+    style = "bootstrap", rownames = FALSE, caption = "Table 2. Number of time intervals in selected HDF5 files.",
+    options = list(searching = FALSE, bPaginate = FALSE, info = FALSE, scrollX = TRUE)
+  )
   
-  selectedScenarios <- reactive({
-    req(rv$H5)
-    df = filter(rv$H5, scenario %in% input$sel_scenarios) 
-    req(nrow(df) > 0) # if user uploads 2nd set of files, then these things get out of sync (presumably) and crash the app; trying to catch that here and stop app until values are available
-    return(df)
-  })
+  # ** channels ----------------------------------------------------------------
   
   channelList <- reactive({
-    h5_read(selectedScenarios(), "/geometry/channel_number") 
-  })
-  
-  flowList <- reactive({
-    h5_read(selectedScenarios(), "/data/channel flow")
-  })
-  
-  areaList <- reactive({
-    h5_read(selectedScenarios(), "/data/channel area")
-  })
-  
-  stageList <- reactive({
-    h5_read(selectedScenarios(), "/data/channel stage")
-  })
-  
-  velocityList <- reactive({
+    req(rv[["H5"]])
     out = list()
-    for (i in names(flowList())){
-      out[[i]] = flowList()[[i]]/areaList()[[i]]
+    for (i in 1:nrow(rv[["H5"]])){
+      out[[rv[["H5"]]$scenario[i]]] = tibble(Channel = h5read(rv[["H5"]]$datapath[i], "/hydro/geometry/channel_number"),
+                                             Index = 1:length(Channel))
     }
     return(out)
   })
   
-  startDateList <- reactive({
-    h5_read_attr(selectedScenarios(), "/data/channel flow", "start_time")
+  channelTibble <- reactive({
+    bind_rows(channelList(), .id = "Scenario") %>% 
+      filter(Scenario %in% intervalSub()[["scenario"]]) # exclude scenarios that will be dropped when reading data (b/c not enough data)
   })
   
-  timeIntervalList <- reactive({
-    h5_read_attr(selectedScenarios(), "/data/channel flow", "interval")
+  channelTibbleWide <- reactive({
+    channelTibble() %>% 
+      select(-Index) %>% 
+      bind_rows(tibble(Scenario = "DefaultMap", Channel = channels)) %>% 
+      mutate(Value = 1L) %>% 
+      spread(key = Scenario, value = Value, fill = 0L) %>% 
+      mutate(Total = rowSums(.) - Channel) # scenario columns are 0 and 1
   })
   
-  datesList <- reactive({
-    til = timeIntervalList()
-    sdl = startDateList()
-    fl = flowList()
-    out = list()
-    for (i in names(til)){
-      validate(need(til[[i]] %in% c("15min", "1hour"), "Time step interval must be '15min' or '1hour'. Please select different file(s)."))
-      by.string = ifelse(til[[i]] == "15min", "15 min", "1 hour")
-      out[[i]] = seq(from = ymd_hms(sdl[[i]]), length.out = dim(fl[[i]])[3], by = by.string)
-    }
-    return(out)
-  })
+  output$channelTable <- renderDT({
+    sc = intervalSub()[["scenario"]]
+    ctw = channelTibbleWide() %>% 
+      filter(Total < length(sc) + 1) %>% 
+      select(c("Channel", "Default Map" = "DefaultMap", sc)) # sorting columns so that Default is always the 2nd column; Channel will always be first because of spread
+    ctw}, 
+    style = "bootstrap", rownames = FALSE,
+    caption = "Table 3. Differences in channels included in default map file and selected HDF5 files with at least 2 time intervals in the date range (see Table 2). 
+    1 and 0 indicate that channels are present or not present in a file, respectively. A table with no data indicates that all files have the same channels.",
+    options = list(searching = FALSE, bPaginate = FALSE, info = FALSE, scrollX = TRUE)
+  )
   
-  nodeList <- reactive({
-    h5_read(selectedScenarios(), "/geometry/channel_location")
-  })
-  
-  availableChannels <- reactive({
-    if (is.null(input$h5_files)) {
+  allCommonChannels <- reactive({
+    if (is.null(input[["h5_files"]])) {
       x = channels
     }else{
-      cl = channelList()
-      cl[["shp.chan"]] = channels # add shapefile channels to channel list
-      x = sort(Reduce(intersect, cl)) # identify channels that are found in all lists
+      x = channelTibbleWide() %>% 
+        filter(Total == length(intervalSub()[["scenario"]]) + 1) %>% # filter to keep channels that are found in all scenarios and default map
+        pull(Channel)
     }
     return(x) 
   })
   
-  # * filter  ----------------------------------------------------------------
+  # ** nodes ----------------------------------------------------------------
   
-  fvcd <- reactive({   # fvcd = flow velocity channel dates; named before added other output, i.e., stage, nodes
-    req(rv$H5, isTRUE(nrow(rv$H5) > 1), input$sel_scenarios, input$base_scenario)
-    validate(need(input$date_range[2] > input$date_range[1], "Please choose larger date range."))
-    fl = flowList()
-    vl = velocityList()
-    sl = stageList()
-    cl = channelList()
-    dl = datesList()
-    nl = nodeList()
-    
-    fo = list() # fo = flow out
-    vo = list() # vo = velocity out
-    so = list() # so = stage out
-    co = list() # co = channels out; trying to preserve order of channels in H5 files (perhaps unnecessarily?)
-    do = list() # do = dates out
-    for (i in names(flowList())){
-      ni = which(process_nodes(nl[[i]]) == input$nodes)  # process_nodes formats text to match input$nodes
-      ci = which(cl[[i]] %in% availableChannels())
-      di = which(dl[[i]] >= input$date_range[1] & dl[[i]] <= input$date_range[2])  # di = date indices
-      fo[[i]] = fl[[i]][ni, ci, di]
-      vo[[i]] = vl[[i]][ni, ci, di]
-      so[[i]] = sl[[i]][ni, ci, di]
-      co[[i]] = cl[[i]][ci]
-      do[[i]] = dl[[i]][di]
-    }
-    return(list("flow" = fo, "velocity" = vo, "channels" = co, "stage" = so, "chan.index" = ci, "dates" = do))
-  })
-  
-  # * time series plots  ----------------------------------------------------------------
-  
-  tsDF <- reactive({
-    al = fvcd() # al = all lists; fvcd is a list of lists
-    cl = al[["channels"]]
-    dl = al[["dates"]]
-    
+  nodeList <- reactive({
+    req(rv[["H5"]])
     out = list()
-    for (j in c("flow", "velocity", "stage")){
-      for (i in names(cl)){
-        ci = which(cl[[i]] %in% input$ts_channel)
-        out[[j]][[i]] = tibble(Date = dl[[i]],
-                               Value = al[[j]][[i]][ci,])
-      }
-      out[[j]] = bind_rows(out[[j]], .id = "Scenario")
+    for (i in 1:nrow(rv[["H5"]])){
+      out[[rv[["H5"]]$scenario[i]]] = tibble(NodeLoc = process_nodes(h5read(rv[["H5"]]$datapath[i], "/hydro/geometry/channel_location")),
+                                             Index = 1:length(NodeLoc))
     }
     return(out)
+  })
+  
+  # ** read data ----------------------------------------------------------------
+  
+  observeEvent(input[["read_data"]],{
+    rv[["H5META"]] = rv[["STAGE"]] = rv[["FLOW"]] = rv[["AREA"]] = rv[["VELOCITY"]] = rv[["DLWYS"]] = rv[["DRR"]] = rv[["CL"]] = rv[["ACC"]] = NULL # clear out previous results
+    
+    rv[["H5META"]] = h5Metadata()
+    rv[["DLWYS"]] = datesListWaterYearSub()
+    rv[["DRR"]] = input[["date_range_read"]]
+    rv[["ACC"]] = allCommonChannels()
+    rv[["CL"]] = lapply(channelList(), filter, Channel %in% rv[["ACC"]])
+    nl = lapply(nodeList(), filter, NodeLoc == input[["node_loc"]]) # don't need to store in rv because only two options; once one is selected don't need to track any more
+    
+    withProgress(message = 'Reading...', value = 0, detail = "Stage",{
+      rv[["STAGE"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLWYS"]], "/data/channel stage")
+      setProgress(2.5/10, detail = "Flow")
+      rv[["FLOW"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLWYS"]], "/data/channel flow")
+      setProgress(5/10, detail = "Area")
+      rv[["AREA"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLWYS"]], "/data/channel area")
+      setProgress(7.5/10, message = "Calculating...", detail = "Velocity")
+      rv[["VELOCITY"]] = list()
+      for (i in names(rv[["FLOW"]])){
+        rv[["VELOCITY"]][[i]] = rv[["FLOW"]][[i]]/rv[["AREA"]][[i]]
+      }
+      setProgress(9.5/10, message = "Finishing", detail = "")
+    })
+    h5closeAll()
+    updateTabsetPanel(session, "explore_tabs", selected = "Time Series") # change tab after clicking on process output button
+  })#/Read Button
+  
+  
+  # ** dynamic UI ----------------------------------------------------------------
+  
+  observe({
+    cond = !is.null(rv[["H5"]])
+    toggle("metadata_msg", condition = !cond)
+    toggle("sel_water_year", condition = cond & length(waterYears()) > 1)
+    toggle("date_range_read", condition = cond)
+  })
+  
+  observe({
+    req(rv[["H5"]])
+    cond = max(intervals()[["num_intervals_in_range"]]) > 1
+    toggle("node_loc", condition = cond)
+    toggle("read_data", condition = cond)
+    toggle("date_range_read_warn", condition = !cond)
+  })
+  
+  observe({
+    wy = waterYears()
+    updatePickerInput(session, "sel_water_year", choices = wy, selected = max(wy))
+  })
+  
+  observe({
+    d = datesTibbleWaterYear()
+    min_date = floor_date(min(d[["Date"]], na.rm = TRUE), unit = "day")
+    max_date = floor_date(max(d[["Date"]], na.rm = TRUE), unit = "day")
+    updateDateRangeInput(session, "date_range_read",
+                         start = min_date, end = max_date, 
+                         min = min_date, max = max_date)
+  })
+  
+  # * Time Series tab  ----------------------------------------------------------------
+  
+  # ** dates  ----------------------------------------------------------------
+  
+  datesList <- reactive({
+    req(rv[["DLWYS"]])
+    drv = ymd_hms(paste(input[["date_range_viz"]], c("00:00:00", "23:59:59")))
+    lapply(rv[["DLWYS"]], filter, Date >= drv[1] & Date <= drv[2])
+  })
+  
+  # ** velocity  ----------------------------------------------------------------
+  
+  velocityList <- reactive({
+    req(rv[["VELOCITY"]])
+    response_list(rv[["VELOCITY"]], datesList())
+  })
+  
+  # using velocity to test date ranges and number of observations; should be same for flow and stage
+  velocityTibble <- reactive({
+    req(rv[["VELOCITY"]])
+    response_tibble(velocityList(), datesList(), rv[["CL"]], input[["ts_channel"]]) %>% 
+      filter(Scenario %in% input[["sel_scenarios"]])
+  })
+  
+  # check that at least two observations for at least one scenario 
+  obsCheck <- reactive({
+    # str(velocityTibble())
+    req(rv[["VELOCITY"]])
+    if (nrow(velocityTibble()) > 1){
+      scenario_rows = velocityTibble() %>% 
+        group_by(Scenario) %>% 
+        summarise(N = n())
+      out = max(scenario_rows[["N"]]) > 1
+    }else{
+      out = FALSE  # if 0 or 1 rows in velocityTibble(), then not enough observations and obsCheck() is false
+    }
+    return(out) 
   })
   
   output$tsVelocityPlot = renderPlot({
-    req(isTRUE(nrow(rv$H5) > 1), input$base_scenario, nrow(tsDF()$velocity) > 0)
-    ts_plot(tsDF()$velocity, "Velocity (ft/s)")
+    req(rv[["VELOCITY"]])
+    ts_plot(velocityTibble(), "Velocity (ft/s)", "Velocity", obsCheck())
+  })
+  
+  # ** flow  ----------------------------------------------------------------
+  
+  flowList <- reactive({
+    req(rv[["FLOW"]])
+    response_list(rv[["FLOW"]], datesList())
   })
   
   output$tsFlowPlot = renderPlot({
-    req(isTRUE(nrow(rv$H5) > 1), input$base_scenario, nrow(tsDF()$flow) > 0)
-    ts_plot(tsDF()$flow, "Flow (cfs)")
+    req(rv[["FLOW"]])
+    d = response_tibble(flowList(), datesList(), rv[["CL"]], input[["ts_channel"]]) %>% 
+      filter(Scenario %in% input[["sel_scenarios"]])
+    ts_plot(d, "Flow (cfs)", "Flow", obsCheck())
+  })
+  
+  # ** stage  ----------------------------------------------------------------
+  
+  stageList <- reactive({
+    req(rv[["STAGE"]])
+    response_list(rv[["STAGE"]], datesList())
   })
   
   output$tsStagePlot = renderPlot({
-    req(isTRUE(nrow(rv$H5) > 1), input$base_scenario, nrow(tsDF()$stage) > 0)
-    ts_plot(tsDF()$stage, "Stage (ft)")
+    req(rv[["STAGE"]])
+    d = response_tibble(stageList(), datesList(), rv[["CL"]], input[["ts_channel"]]) %>% 
+      filter(Scenario %in% input[["sel_scenarios"]])
+    ts_plot(d, "Stage (ft)", "Stage", obsCheck())
   })
+  
+  # ** dynamic UI ----------------------------------------------------------------
+  
+  # observe({
+  #   if (is.null(rv[["FLOW"]])){
+  #     hideTab(inputId = "explore_tabs", target = "Time Series")
+  #   }else{
+  #     showTab(inputId = "explore_tabs", target = "Time Series")
+  #   }
+  # })
+  
+  observe({
+    cond = !is.null(rv[["FLOW"]])
+    toggle("ts_msg", condition = !cond)
+    toggle("ts_plots", condition = cond)
+    toggle("ts_channel", condition = cond)
+    toggle("map_channel", condition = cond)
+    toggle("date_range_viz", condition = cond)
+    toggle("base_scenario", condition = cond)
+    toggle("sel_scenarios", condition = cond)
+  })
+  
+  intervalCheck <- reactive({
+    req(input[["sel_scenarios"]])
+    # check if all selected scenarios use the same time interval
+    length(unique(filter(rv[["H5META"]], scenario %in% input[["sel_scenarios"]])[["interval"]])) == 1
+  })
+  
+  observe({
+    req(input[["sel_scenarios"]])
+    toggle("date_range_viz_warn", condition = !obsCheck())
+    toggle("interval_warn", condition = !intervalCheck())
+    toggle("run_comp", condition = length(input[["sel_scenarios"]]) > 1 & obsCheck() & intervalCheck()) 
+    toggle("files_warn", condition = length(input[["sel_scenarios"]]) < 2)
+  })
+  
+  observe({
+    req(rv[["ACC"]])
+    acc = rv[["ACC"]][!(rv[["ACC"]] %in% rv[["DC"]])]
+    updatePickerInput(session, "ts_channel", choices = acc, selected = input[["map_channel"]])
+  })
+  
+  observe({
+    req(rv[["ACC"]])
+    acc = rv[["ACC"]][!(rv[["ACC"]] %in% rv[["DC"]])]
+    updatePickerInput(session, "map_channel", choices = acc, selected = input[["ts_channel"]])
+  })
+  
+  observe({
+    drr = rv[["DRR"]]
+    updateDateRangeInput(session, "date_range_viz",
+                         start = drr[1], end = drr[2], 
+                         min = drr[1], max = drr[2])
+  })
+  
+  observe({
+    sc = sort(names(rv[["FLOW"]]))
+    updatePickerInput(session, "sel_scenarios", choices = sc, selected = sc)
+  })
+  
+  observe({
+    updatePickerInput(session, "base_scenario", choices = input[["sel_scenarios"]])
+  })
+  
+  
+  # Comparative ----------------------------------------------------------------
   
   # * summary statistics  ----------------------------------------------------------------
   
+  allLists <- reactive({
+    list("flow" = flowList(), "stage" = stageList(), "velocity" = velocityList())
+  })
+  
   sumStats <- reactive({   # fv = flow velocity
-    al = fvcd() # al = all lists; fvcd is a list of lists
-    cl = al[["channels"]]
+    al = allLists() # al = all lists
+    cl = rv[["CL"]]
     out = list()
     for (j in c("flow", "velocity", "stage")){
-      for (i in names(cl)){
-        out[[j]][[i]] = calc_summary_stats(al[[j]][[i]], 1, cl[[i]])
+      for (i in names(al[["flow"]])){
+        out[[j]][[i]] = calc_summary_stats(al[[j]][[i]], channel.dim = 2, cl[[i]][["Channel"]]) # 3D array; first dim is nodes; 2nd is channels; 3rd is datetimes
       }
     }
     return(out)
   })
   
-  # * process  ----------------------------------------------------------------
+  # * run comparative analysis  ----------------------------------------------------------------
   
-  observeEvent(input$proc_dsm2,{
+  observeEvent(input[["run_comp"]],{
     
-    rv$DN = rv$PO = rv$AD = rv$SS = rv$B = rv$NB = NULL # clear out previous results
+    rv[["DN"]] = rv[["PO"]] = rv[["AD"]] = rv[["SS"]] = rv[["B"]] = rv[["NB"]] = NULL # clear out previous results
     
-    withProgress(message = 'Processing DSM2 output...', value = 0, detail = "Initializing...",{
-      al = fvcd() # al = all lists; fvcd is a list of lists
-      ac = al[["channels"]][[input$base_scenario]] # ac = all channels; should be same for all scenarios
+    withProgress(message = 'Running analysis...', value = 0,{
+      al = allLists()
+      ac = rv[["CL"]][[input[["base_scenario"]]]][["Channel"]] # ac = all channels; should be same for all scenarios
       ss = sumStats()
-      ss.comb = list() # combine scenarios within each hydro metric (i.e., flow, velocity)
+      ss.comb = list() # combine scenarios within each hydro metric (i.e., flow, velocity, stage)
       
       dn = list()  # dn = density
       po = list()  # po = proportion overlap
@@ -238,8 +443,8 @@ function(input, output, session) {
       ad.re = list() # ad.re = absolute difference rescaled to 0-1 across channels and scenarios
       for (j in c("flow", "velocity", "stage")){
         ss.comb[[j]] = bind_rows(ss[[j]], .id = "scenario")
-        po.base = al[[j]][[input$base_scenario]]
-        ad.base = ss[[j]][[input$base_scenario]] %>% arrange(channel)
+        po.base = al[[j]][[input[["base_scenario"]]]]
+        ad.base = ss[[j]][[input[["base_scenario"]]]] %>% arrange(channel)
         dn.comp.list = list()
         po.comp.list = list()
         ad.comp.list = list()
@@ -252,51 +457,54 @@ function(input, output, session) {
           po.chan = vector(mode = "numeric", length = length(ac))
           for (k in 1:length(ac)){ # using channels in base scenario, but should be same in all scenarios (if filtering was correct)
             msd.chan = filter(ss.comb[[j]], channel == ac[k])
-            mn = plyr::round_any(min(msd.chan$min, na.rm = TRUE), accuracy = 0.001, f = floor)
-            mx = plyr::round_any(max(msd.chan$max, na.rm = TRUE), accuracy = 0.001, f = ceiling)
+            mn = plyr::round_any(min(msd.chan[["min"]], na.rm = TRUE), accuracy = 0.001, f = floor)
+            mx = plyr::round_any(max(msd.chan[["max"]], na.rm = TRUE), accuracy = 0.001, f = ceiling)
             
-            po.out = proportion_overlap(po.base[k,], po.comp[k,], mn, mx)
+            po.out = proportion_overlap(po.base[1,k,], po.comp[1,k,], mn, mx)
             
-            dn.chan.list[[k]] = bind_rows(tibble(scenario = input$base_scenario, channel = ac[k], x = po.out$x, y = po.out$y.base),
-                                          tibble(scenario = i, channel = ac[k], x = po.out$x, y = po.out$y.comp))
+            dn.chan.list[[k]] = bind_rows(tibble(scenario = input[["base_scenario"]], channel = ac[k], x = po.out[["x"]], y = po.out[["y.base"]]),
+                                          tibble(scenario = i, channel = ac[k], x = po.out[["x"]], y = po.out[["y.comp"]]))
             
-            po.chan[k] = po.out$po
+            po.chan[k] = po.out[["po"]]
             
-            incProgress(1/(3 * length(nonBase()) * length(ac)), detail = "Calculating...") # three is for c("flow", "velocity", "stage")
+            incProgress(1/(3 * length(nonBase()) * length(ac))) # 3 is for c("flow", "velocity", "stage")
           }
           dn.comp.list[[i]] = bind_rows(dn.chan.list)
           po.comp.list[[i]] = tibble(channel = ac, prop.overlap = po.chan)
         }
         dn[[j]] = bind_rows(dn.comp.list, .id = "comp") %>% 
-          mutate(base = input$base_scenario) # adding base scenario to output for completeness, but not necessary for subsequent calcs (I think)
+          mutate(base = input[["base_scenario"]]) # adding base scenario to output for completeness, but not necessary for subsequent calcs (I think)
         po[[j]] = bind_rows(po.comp.list, .id = "comp") %>% 
-          mutate(base = input$base_scenario)
+          mutate(base = input[["base_scenario"]])
         ad[[j]] = bind_rows(ad.comp.list, .id = "comp") %>% 
-          mutate(base = input$base_scenario)
+          mutate(base = input[["base_scenario"]])
         ad.re[[j]] = ad[[j]] %>% 
           mutate_at(.vars = rescale.cols, .funs = rescale)
       }
     })
-    rv$DN = dn
-    rv$PO = po
-    rv$AD = ad.re              
-    rv$SS = ss.comb
-    rv$B = input$base_scenario # need to stash all values at time button was clicked
-    rv$NB = nonBase()
-    updateNavbarPage(session, "nav_tabs", selected = "Visualize DSM2 Output") # change tab after clicking on process output button
+    rv[["DN"]] = dn
+    rv[["PO"]] = po
+    rv[["AD"]] = ad.re              
+    rv[["SS"]] = ss.comb
+    rv[["B"]] = input[["base_scenario"]] # need to stash all input values at time button was clicked
+    rv[["NB"]] = nonBase()
+    updateNavbarPage(session, "nav_tabs", selected = "Comparative") # change tab after clicking on process output button
   })#/Run Button
-  
-  
-  # Visualize DSM2 Output ----------------------------------------------------------------
   
   # * dynamic UI ----------------------------------------------------------------
   
-  observe({
-    updateSelectInput(session, "comp_scenario", choices = rv$NB)
+  nonBase <- reactive({
+    # names of scenarios that were not selected as baseline scenario
+    req(input[["base_scenario"]])
+    input[["sel_scenarios"]][input[["sel_scenarios"]] != input[["base_scenario"]]]
   })
   
   observe({
-    cond = !is.null(rv$PO)
+    updateSelectInput(session, "comp_scenario", choices = rv[["NB"]])
+  })
+  
+  observe({
+    cond = !is.null(rv[["PO"]])
     toggle("map_pal", condition = cond)
     toggle("color_range", condition = cond)
     toggle("remove_channels", condition = cond)
@@ -305,81 +513,85 @@ function(input, output, session) {
   })
   
   observe({ 
-    req(rv$NB)                        
-    cond = length(rv$NB) > 1 & input$summ_stat != ""
+    req(rv[["NB"]])                        
+    cond = length(rv[["NB"]]) > 1 & input[["summ_stat"]] != ""
     toggle("scale_axes", condition = cond)
     toggle("comp_scenario", condition = cond)
   })
   
   observe({ 
-    req(rv$NB) 
-    cond = input$summ_stat == ""
+    req(rv[["NB"]]) 
+    cond = input[["summ_stat"]] == ""
     toggle("ss_help", condition = cond)
   })
   
-  observeEvent(input$metric,{
+  observeEvent(input[["metric"]],{
     ch = summ.stats
-    if(input$metric == "stage") ch = summ.stats[summ.stats != "prop.neg"]
-    updateSelectInput(session, "summ_stat", choices = ch, selected = input$summ_stat)
+    if(input[["metric"]] == "stage") ch = summ.stats[summ.stats != "prop.neg"]
+    updateSelectInput(session, "summ_stat", choices = ch, selected = input[["summ_stat"]])
   })
   
   # * filter ----------------------------------------------------------------
   
   poSub <- reactive({
-    req(rv$PO, input$comp_scenario)
-    po = rv$PO[[input$metric]]
-    return(po[po[["comp"]] == input$comp_scenario & !(po[["channel"]] %in% rv$DC),])
+    req(rv[["PO"]], input[["comp_scenario"]])
+    po = rv[["PO"]][[input[["metric"]]]]
+    return(po[po[["comp"]] == input[["comp_scenario"]] & !(po[["channel"]] %in% rv[["DC"]]),])
   })
   
   poSubChannel <- reactive({
     po = poSub()
-    return(po[po[["channel"]] == input$map_channel, ])
+    return(po[po[["channel"]] == input[["map_channel"]], ])
   })
   
   adSub <- reactive({
-    req(rv$AD, input$comp_scenario, input$summ_stat != "")
-    ad = rv$AD[[input$metric]]
-    ad.sub = ad[ad[["comp"]] == input$comp_scenario & !(ad[["channel"]] %in% rv$DC),]
-    ad.sub[["value"]] = ad.sub[[input$summ_stat]]
+    req(rv[["AD"]], input[["comp_scenario"]], input[["summ_stat"]] != "")
+    ad = rv[["AD"]][[input[["metric"]]]]
+    ad.sub = ad[ad[["comp"]] == input[["comp_scenario"]] & !(ad[["channel"]] %in% rv[["DC"]]),]
+    ad.sub[["value"]] = ad.sub[[input[["summ_stat"]]]]
     return(ad.sub)
   })
   
   adSubChannel <- reactive({
     ad = adSub()
-    return(ad[ad[["channel"]] == input$map_channel, ])
+    return(ad[ad[["channel"]] == input[["map_channel"]], ])
   })
   
   ssSub <- reactive({
-    req(input$comp_scenario, input$summ_stat != "")
-    ss = rv$SS[[input$metric]]
-    ss[["value"]] = ss[[input$summ_stat]] # rename summary stat column to value for plotting later
-    ss = ss[ss[["channel"]] == input$map_channel & ss[["scenario"]] %in% c(rv$B, input$comp_scenario),]
+    req(input[["comp_scenario"]], input[["summ_stat"]] != "")
+    ss = rv[["SS"]][[input[["metric"]]]]
+    ss[["value"]] = ss[[input[["summ_stat"]]]] # rename summary stat column to value for plotting later
+    ss = ss[ss[["channel"]] == input[["map_channel"]] & ss[["scenario"]] %in% c(rv[["B"]], input[["comp_scenario"]]),]
     return(ss)
   })
   
   densityChannel <- reactive({
-    dn = rv$DN[[input$metric]]
-    dn = dn[dn$channel == input$map_channel,]
+    dn = rv[["DN"]][[input[["metric"]]]]
+    dn = dn[dn[["channel"]] == input[["map_channel"]],]
   })
   
   densitySub <- reactive({ 
-    req(input$comp_scenario)
+    req(input[["comp_scenario"]])
     dn = densityChannel()
-    dn = dn[dn[["comp"]] == input$comp_scenario,]
-    dn[["scenario"]] = factor(dn[["scenario"]], levels = c(rv$B, input$comp_scenario))
+    dn = dn[dn[["comp"]] == input[["comp_scenario"]],]
+    dn[["scenario"]] = factor(dn[["scenario"]], levels = c(rv[["B"]], input[["comp_scenario"]]))
     return(dn)
   })
   
   densityRange <- reactive({
     # x-axes were scaled the same (for each channel) when calculating density
-    if (input$scale_axes == TRUE){
+    if (input[["scale_axes"]] == TRUE){
       df = densityChannel()
     }else{
       df = densitySub()
     }
-    y.thresh = max(df$y)/100  # just guessed at threshold value; might need to be adjusted; looked okay in my spot checks
+    y.thresh = max(df[["y"]])/100  # just guessed at threshold value; might need to be adjusted; looked okay in my spot checks
     df = df[df[["y"]] > y.thresh,]
-    out = xy_range(df)
+    # out = xy_range(df)
+    out = c("x.min" = min(df[["x"]], na.rm = TRUE),
+            "x.max" = max(df[["x"]], na.rm = TRUE),
+            "y.min" = min(df[["y"]], na.rm = TRUE),
+            "y.max" = max(df[["y"]], na.rm = TRUE))
     return(out)
   })
   
@@ -387,26 +599,26 @@ function(input, output, session) {
   
   output$densityPlot = renderPlot({
     po = poSubChannel()
-    po.lab = data_frame(X = Inf, Y = Inf, H = 1.5, V = 2, L = formatC(round(po$prop.overlap, 3), format='f', digits=3)) # create a data.frame with formatted proportion overlap value for plotting in upper right corner of density plot
+    po.lab = tibble(X = Inf, Y = Inf, H = 1.5, V = 2, L = formatC(round(po[["prop.overlap"]], 3), format='f', digits=3)) # create a data.frame with formatted proportion overlap value for plotting in upper right corner of density plot
     
     ad = adSubChannel()
-    ad.lab = data_frame(X = -Inf, Y = Inf, H = -0.5, V = 2, L = formatC(ad$value, format='f', digits = ifelse(ad$value < 100, 3, 0), big.mark = ",")) # create a data.frame with formatted absolute difference value for plotting in upper left corner of density plot
+    ad.lab = tibble(X = -Inf, Y = Inf, H = -0.5, V = 2, L = formatC(ad[["value"]], format='f', digits = ifelse(ad[["value"]] < 100, 3, 0), big.mark = ",")) # create a data.frame with formatted absolute difference value for plotting in upper left corner of density plot
     
     df = densitySub()
     dr = densityRange()
     
     p <- ggplot(df) +
       geom_density(aes(x = x, y = y, fill = factor(scenario), col = factor(scenario)), stat = "identity", alpha = 0.6) +
-      labs(x = names(x.labs)[x.labs == input$metric], y = "Density") +
-      geom_text(data = ad.lab, aes(x = X, y = Y, hjust = H, vjust = V, label = L), size = 6, col = ifelse(input$type == "ad", 2, 1)) +
-      geom_text(data = po.lab, aes(x = X, y = Y, hjust = H, vjust = V, label = L), size = 6, col = ifelse(input$type == "ad", 1, 2)) +
+      labs(x = names(x.labs)[x.labs == input[["metric"]]], y = "Density") +
+      geom_text(data = ad.lab, aes(x = X, y = Y, hjust = H, vjust = V, label = L), size = 6, col = ifelse(input[["type"]] == "ad", 2, 1)) +
+      geom_text(data = po.lab, aes(x = X, y = Y, hjust = H, vjust = V, label = L), size = 6, col = ifelse(input[["type"]] == "ad", 1, 2)) +
       scale_fill_manual(name = "Scenario", values = c("#6a3d9a", "#ff7f00")) +
       scale_colour_manual(name = "Scenario", values = c("#6a3d9a", "#ff7f00"), guide = FALSE) +
       coord_cartesian(xlim = c(dr[["x.min"]], dr[["x.max"]]), ylim = c(0, dr[["y.max"]])) +
-      ggtitle(paste("Channel", input$map_channel)) +
+      ggtitle(paste("Channel", input[["map_channel"]])) +
       theme_minimal() +
       theme.mod
-    if (input$summ_stat != "prop.neg"){  # doesn't make sense to plot prop.neg/reversal on these distributions
+    if (input[["summ_stat"]] != "prop.neg"){  # doesn't make sense to plot prop.neg/reversal on these distributions
       p = p + geom_vline(data = ssSub(), aes(xintercept = value, col = factor(scenario)), linetype = "dashed", size = 1)
     }
     return(p)
@@ -416,33 +628,33 @@ function(input, output, session) {
   # join map data with appropriate value for coloring channels on map
   
   shpSub <- reactive({
-    subset(shp, !(channel_nu %in% rv$DC))
+    subset(shp, !(channel_nu %in% rv[["DC"]]))
   })
   
   poData <- reactive({
-    req(input$type == "po")
+    req(input[["type"]] == "po")
     shp = shpSub()
-    cr = input$color_range
+    cr = input[["color_range"]]
     shp@data = shp@data %>% 
       left_join(select(poSub(), channel_nu = channel, overlap = prop.overlap), by = "channel_nu") %>% 
       mutate(overlap = ifelse(overlap < cr[1], cr[1],
                               ifelse(overlap > cr[2], cr[2], overlap)))
     pal = colorNumeric(
-      palette = input$map_pal, 
+      palette = input[["map_pal"]], 
       domain = cr)
     return(list(shp, pal))
   })
   
   adData <- reactive({
-    req(input$type == "ad")
+    req(input[["type"]] == "ad")
     shp = shpSub()
-    cr = input$color_range
+    cr = input[["color_range"]]
     shp@data = shp@data %>%
       left_join(select(adSub(), channel_nu = channel, value), by = "channel_nu") %>% 
       mutate(value = ifelse(value < cr[1], cr[1],
                             ifelse(value > cr[2], cr[2], value)))
     pal = colorNumeric(
-      palette = input$map_pal,
+      palette = input[["map_pal"]],
       domain = cr,
       reverse = TRUE  # for difference, high values indicate greater effect, which is opposite of proportion overlap; reverse the palette to reduce cognitive burden of palette flipping when moving from proportion overlap to absolute difference
     )
@@ -453,19 +665,21 @@ function(input, output, session) {
   
   output$Map = renderLeaflet({
     leaflet(options = leafletOptions(zoomControl = FALSE, attributionControl = FALSE)) %>%
-      setView(lng = -121.75, lat = 38.05, zoom = 10) #%>%
+      setView(lng = -121.75, lat = 38.05, zoom = 10) 
+  })
+  
+  proxyMap = leafletProxy("Map", session)
+  
+  observe({
+    input[["nav_tabs"]]
+    proxyMap %>% 
+      addProviderTiles(input[["map_back"]])
   })
   
   observe({
-    input$nav_tabs
-    leafletProxy("Map", session) %>% 
-      addProviderTiles(input$map_back)
-  })
-  
-  observe({
-    input$nav_tabs               # dependency on nav_tabs displays shapefile when tab is clicked (assuming next condition is met)
-    if (is.null(rv$PO)){         # display default map until results are generated
-      leafletProxy("Map", session) %>%
+    input[["nav_tabs"]]               # dependency on nav_tabs displays shapefile when tab is clicked (assuming next condition is met)
+    if (is.null(rv[["PO"]])){         # display default map until comparative results are generated
+      proxyMap %>% 
         clearShapes() %>% 
         addPolylines(data = shp,
                      weight = 6,
@@ -479,7 +693,7 @@ function(input, output, session) {
   observeEvent(poData(),{
     pd = poData()[[1]]
     pal.po <- poData()[[2]]
-    delta.map = leafletProxy("Map", session) %>%
+    delta.map = proxyMap %>%
       clearShapes() %>% 
       addPolylines(data = pd,
                    color = ~pal.po(overlap),
@@ -494,7 +708,7 @@ function(input, output, session) {
   observeEvent(adData(),{
     ad = adData()[[1]]
     pal.ad = adData()[[2]]
-    delta.map = leafletProxy("Map", session) %>%
+    delta.map = proxyMap %>%
       clearShapes() %>% 
       addPolylines(data = ad,
                    color = ~pal.ad(value),
@@ -509,17 +723,6 @@ function(input, output, session) {
   # zoom and place map markers for selected channels
   # based on the example here: https://uasnap.shinyapps.io/ex_leaflet/
   
-  observeEvent(input$Map_shape_click, {
-    if (input$remove_channels == TRUE){
-      p <- input$Map_shape_click
-      if (is.null(rv$DC)){
-        rv$DC = p$id
-      }else{
-        rv$DC = c(rv$DC, p$id)
-      }
-    }
-  })
-  
   # highlight selected channel; black chosen to highlight because other choices (e.g., yellow) might be used in map (i.e., hard to see yellow channel highlighted in yellow)
   ap_sel <- function(map, channel){
     addPolylines(map,
@@ -530,84 +733,50 @@ function(input, output, session) {
                  layerId = "Selected")
   }
   
-  # update the location selectInput on map clicks
-  observeEvent(input$Map_shape_click, { 
-    if (input$remove_channels == FALSE){
-      p <- input$Map_shape_click
-      if(!is.null(p$id)){
-        if (p$id != "Selected"){  # 'Selected' layer placed on top of reach layer; don't want to update when 'Selected' layer clicked
-          if(is.null(input$map_channel) || input$map_channel != p$id){
-            updateSelectInput(session, "map_channel", selected = p$id)
-          } 
-        }else{
-          # do nothing; selected channel dropdown should not change b/c want to have plot displayed in corner at all times
-        }
+  observeEvent(input[["Map_shape_click"]], {
+    # update the list of deleted channels (rv[["DC"]]) on map click (when remove_channels is on)
+    p <- input[["Map_shape_click"]]
+    req(p[["id"]])
+    if (input[["remove_channels"]] == TRUE){
+      p <- input[["Map_shape_click"]]
+      if (is.null(rv[["DC"]])){
+        rv[["DC"]] = p[["id"]]
+      }else{
+        rv[["DC"]] = c(rv[["DC"]], p[["id"]])
       }
-    }
-  })
-  
-  # update the map markers and view on map clicks
-  observeEvent(input$Map_shape_click, { 
-    if (input$remove_channels == FALSE){
-      p <- input$Map_shape_click
-      proxy <- leafletProxy("Map")
-      if(p$id == "Selected"){
-        # do nothing
-      } else {
-        proxy %>% setView(lng = p$lng, lat = p$lat, input$Map_zoom) %>% ap_sel(p$id)
-      }
+    }else{
+      # update the location selectInput on map clicks
+      if (p[["id"]] != "Selected"){  # 'Selected' layer placed on top of reach layer; don't want to update when 'Selected' layer clicked
+        updateSelectInput(session, "map_channel", selected = p[["id"]])
+        proxyMap %>% setView(lng = p[["lng"]], lat = p[["lat"]], input[["Map_zoom"]]) %>% ap_sel(p[["id"]])
+      } 
     }
   })
   
   # update the map markers and view on location selectInput changes
-  observeEvent(input$map_channel, { 
-    if (input$remove_channels == FALSE){
-      p <- input$Map_shape_click
-      p2 <- filter(cll, channel_nu == input$map_channel)
-      proxy <- leafletProxy("Map")
-      if(nrow(p2)==0){
-        proxy %>% removeShape(layerId = "Selected")
-      } else if(length(p$id) && input$map_channel != p$id){  # length(p$id) used as conditional b/c only possible values are 0 or 1
-        proxy %>% setView(lng = p2$lon, lat = p2$lat, input$Map_zoom) %>% ap_sel(input$map_channel) 
-      } else if(!length(p$id)){
-        proxy %>% setView(lng = p2$lon, lat = p2$lat, input$Map_zoom) %>% ap_sel(input$map_channel) 
+  observeEvent(input[["map_channel"]], { 
+    req(input$Map_zoom) # map zoom is initially zero until set in renderLeaflet
+    if (input[["remove_channels"]] == FALSE){
+      cll_sub <- filter(cll, channel_nu == input[["map_channel"]])
+      if(nrow(cll_sub) == 0){  
+        proxyMap %>% removeShape(layerId = "SelectedChannel")
+      }else{
+        proxyMap %>% setView(lng = cll_sub[["lon"]], lat = cll_sub[["lat"]], input[["Map_zoom"]]) %>% ap_sel(input[["map_channel"]])
       }
     }
   })
   
   # info alerts  ----------------------------------------------------------------
-  observeEvent(input$proc_info, {
-    sendSweetAlert(
-      session = session,
-      title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-      text = "Click browse to upload at least two H5 files of DSM2 Hydro output for comparison. Example H5 files are available to download.
-      
-      After uploading the files, the stage, flow, and channel area output are extracted from the H5 files and velocity is calculated by dividing flow by channel area. By default, the velocity time series plot is shown with the option to also show the flow and stage plots.
-      
-      A subset of the uploaded files can be selected for use in the time series plots and subsequent visualizations. However, it is recommended to only upload two files when trying new files because upload times can be slow.
-      
-      Selecting a file for use as a baseline scenario has no effect on the time series plots; it is only used in the visualizations shown after processing the DSM2 output.
-      
-      Click on 'Visualize DSM2 Output' to see the default channel map (i.e., before clicking on 'Process DSM2 Output' button).
-      
-      The date range is extracted from the earliest and latest date across all selected files. Changing the date range allows for zooming in/out on the time series plots. 
-
-      DSM2 requires a warm-up period to move away from the initial conditions. The length of this warm-up period is usually only a few days, but varies from channel to channel. It is most noticeable in channels at the edge of the system (e.g., 1, 410).
-      
-      After uploading/selecting files, setting the date range, and choosing the upstream or downstream node, click on 'Process DSM2 Output'. When processing is complete, the view will automatically switch to the 'Visualize DSM2 Output' tab.",
-      type = "info",
-      btn_labels = "OK"
-    )
-  })
-  
-  observeEvent(input$map_info, {
-    if (is.null(rv$PO)){
+  observeEvent(input[["explore_info"]], {
+    if (input[["explore_tabs"]] == "Metadata"){
       sendSweetAlert(
         session = session,
         title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-        text = "This is the default channel map. When DSM2 Hydro output files are uploaded on the 'Process DSM2 Output' tab, this map will be updated to display only channels found in all uploaded H5 files and the default channel map.
+        text = "Selecting HDF5 files populates the Metadata tab with tables of the start and end dates, time interval, and channels included in the selected files.
         
-        Clicking on a channel pans to the selected channel and updates the 'Selected channel' input in the top left panel.",
+        The date range input allows for reading subsets of the selected HDF5 files. If the selected HDF5 files have start and end dates that span multiple water years, then the date range is constrained by the selected water year to limit the data reading time. Similarly, data is only read for the upstream or downstream node of each channel.
+        
+        Click the 'Read Data' button to read the specified subset of the stage, flow, and channel area output; velocity is calculated by dividing flow by channel area.",
         type = "info",
         btn_labels = "OK"
       )
@@ -615,9 +784,34 @@ function(input, output, session) {
       sendSweetAlert(
         session = session,
         title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-        text = "Overlap is the proportion overlap in the density distributions for the selected comparison. Proportion overlap ranges from 0 to 1.
+        text = "Selecting a file for use as a baseline scenario has no effect on the time series plots; it is only used in the comparative analysis.
+      
+      The date range on the 'Time Series' tab is initially set from the date range on the Metadata tab. Changing the date range allows for zooming in/out on the time series plots. The comparative analysis is based on the date range selected on the 'Time Series' tab.",
+        type = "info",
+        btn_labels = "OK"
+      )
+    }
+    
+  })
+  
+  observeEvent(input[["map_info"]], {
+    if (is.null(rv[["PO"]])){
+      sendSweetAlert(
+        session = session,
+        title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
+        text = "This is the default channel map. When DSM2 HYDRO output files are selected and read and the comparative analysis is run, this map will show the color-scaled results of the comparative analysis.",
+        type = "info",
+        btn_labels = "OK"
+      )
+    }else{
+      sendSweetAlert(
+        session = session,
+        title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
+        text = "Clicking on a channel pans to the selected channel and updates the 'Selected channel' input in the top left panel.
         
-        Difference is the absolute difference in the selected summary statistic for the selected comparison. The absolute differences are rescaled across channels and scenarios to values ranging from 0 to 1; except for 'Reversal' which naturally ranges from 0 to 1.
+        Overlap is the proportion overlap in the density distributions for the selected comparison. Proportion overlap ranges from 0 to 1.
+        
+        Difference is the absolute difference in the selected summary statistic for the selected comparison. The absolute difference values are rescaled across channels and scenarios to values ranging from 0 to 1; except for 'Reversal' which naturally ranges from 0 to 1.
         
         By default, map color is scaled from 0 to 1. To adjust the map color range, click on 'Show map tools' in the top left panel.
         
@@ -629,15 +823,15 @@ function(input, output, session) {
     
   })
   
-  observeEvent(input$plot_info, {
+  observeEvent(input[["plot_info"]], {
     sendSweetAlert(
       session = session,
       title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-      text = "The density plot shows the distribution of 15-min (or 1-hr) velocity/flow/stage values over the selected date range for the selected comparison. 
+      text = "The density plot shows the distribution of velocity/flow/stage values over the selected date range for the selected comparison. 
       
       The rescaled absolute difference in the selected summary statistic and proportion overlap of the distributions are shown in the top left and top right corners of the plot, respectively.
       
-      The dashed vertical lines show the value of the selected summary statistic. Vertical lines are not displayed when 'Reversal' is selected as the summary statistic. 
+      The dashed vertical lines show the value of the selected summary statistic. Vertical lines are not displayed when Reversal is selected as the summary statistic. 
 
       Reversal is the proportion of values that are negative. Reversal only applies to flow and velocity, not stage.
       
@@ -648,8 +842,16 @@ function(input, output, session) {
   })
   
   session$onSessionEnded(function() {
-    h5closeAll()   # necessary?
+    h5closeAll()
   })
+  
+  if (Sys.getenv("WITHIN_ELECTRON") == "1") {
+    # needed for windows apps. As soons as the session ends
+    # we end the process and terminate the R process
+    session$onSessionEnded(function() {
+      stopApp()
+    })
+  }
   
 }
 

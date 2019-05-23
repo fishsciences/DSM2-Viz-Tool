@@ -1,28 +1,7 @@
-options(shiny.maxRequestSize = 1000*1024^2) # increase upload size to 1000 MB (1 GB)
-
-## code to get bioconductor repo info
-# bioc <- local({
-#   env <- new.env()
-#   on.exit(rm(env))
-#   evalq(source("http://bioconductor.org/biocLite.R", local = TRUE), env)
-#   biocinstallRepos()
-# })
-# bioc
-
-# # set repos such that rsconnect can find bioconductor repos
-# r <- getOption("repos")
-# r["BioCsoft"] <- "https://bioconductor.org/packages/3.7/bioc"
-# r["BioCann"] <- "https://bioconductor.org/packages/3.7/data/annotation"
-# r["BioCexp"] <- "https://bioconductor.org/packages/3.7/data/experiment"
-# r["BioCworkflows"] <- "https://bioconductor.org/packages/3.7/workflows"
-# options(repos = r)
-
-# source("https://bioconductor.org/biocLite.R")
-# biocLite("rhdf5")
+# BiocManager::install("rhdf5")  # reminder of how to install Bioconductor packages
 
 library(shiny)
 library(shinyWidgets)
-library(shinycssloaders)
 library(leaflet)
 library(rhdf5)
 library(dplyr)
@@ -31,63 +10,69 @@ library(ggplot2)
 library(lubridate)
 library(shinyjs)
 library(scales)
+library(shinyFiles)
+library(DT)
+
 
 # on windows system uses Cairo for anti-aliasing of plots
-# is not a problem when run on windows system through R but was a problem with built app
-if (.Platform[["OS.type"]] == "windows"){
+# is not a problem when run on windows system through R but was a problem with Electron app
+if (.Platform[["OS.type"]] == "windows") {
   library(Cairo)
-  options(shiny.usecairo=T)
+  options(shiny.usecairo = T)
 }
 
 source("helper.R")
 
-shp = rgdal::readOGR(dsn = "./shapefiles", layer="FlowlinesLatLong")
-# # Commented code below needs to be re-run if input shapefile changes
-# shp@data$id = rownames(shp@data)
-# all.points = ggplot2::fortify(shp, channel_nu = "id")
-# all.df = plyr::join(all.points, shp@data, by = "id") %>%
-#   mutate(chan.ord = paste(channel_nu, order, sep = "."))
-# # find approximate midpoint of channel
-# mid = all.df %>%
-#   group_by(channel_nu) %>%
-#   summarise(mid = round(median(order, na.rm = TRUE), 0)) %>%
-#   mutate(chan.ord = paste(channel_nu, mid, sep = "."))
-# # nad = new all.df
-# nad = all.df %>%
-#   filter(chan.ord %in% mid$chan.ord) %>%
-#   select(long, lat, channel_nu)
-# write.csv(nad, "data/ChannelLatLong.csv", row.names = FALSE)
-
+shp = rgdal::readOGR(dsn = "./shapefiles", layer = "FlowlinesLatLong")
 cll = read.csv("data/ChannelLatLong.csv")   # used for placing map markers for selected channels
 channels = sort(cll$channel_nu)  # used for selectInput widget
 
 siw = 150 # selectInput width
 
 # lookup vectors for linking descriptive names to simple names for plotting purposes
-x.labs = c("Velocity (ft/s)" = "velocity", "Flow (cfs)" = "flow", "Stage (ft)" = "stage")
+x.labs = c(
+  "Velocity (ft/s)" = "velocity",
+  "Flow (cfs)" = "flow",
+  "Stage (ft)" = "stage"
+)
 
-summ.stats = c("Min" = "min",
-              "1st quartile" = "first.quart",
-              "Median" = "median",
-              "Mean" = "mean",
-              "3rd quartile" = "third.quart",
-              "Max" = "max",
-              "Reversal" = "prop.neg")
+summ.stats = c(
+  "Min" = "min",
+  "1st quartile" = "first.quart",
+  "Median" = "median",
+  "Mean" = "mean",
+  "3rd quartile" = "third.quart",
+  "Max" = "max",
+  "Reversal" = "prop.neg"
+)
 
-# don't need to rescale prop.neg; need unnamed vector for mutate_at
+# don't need to rescale prop.neg; need unnamed vector for mutate_at (i.e., can't use summ.stats)
 rescale.cols = c("min", "first.quart", "median", "mean", "third.quart", "max")
 
 # custom ggplot2 theme
-theme.mod = theme(plot.title = element_text(size = 16),
-                  legend.text = element_text(size = 12),
-                  legend.title = element_text(size = 12),
-                  strip.text.x = element_text(size = 12),
-                  strip.text.y = element_text(size = 12),
-                  axis.title = element_text(size = 14),
-                  axis.text = element_text(size = 12))
+theme.mod = theme(
+  plot.title = element_text(size = 16),
+  legend.text = element_text(size = 12),
+  legend.title = element_text(size = 14),
+  strip.text.x = element_text(size = 12),
+  strip.text.y = element_text(size = 12),
+  axis.title = element_text(size = 14),
+  axis.text = element_text(size = 12)
+)
 
-
-
-
+# # test performance of loading whole file compared to repeated reading of smaller subsets
+# library(microbenchmark)
+# fn = "/Users/travishinkelman/sjr1500_omr2500.h5"
+# h5read_loop <- function(n, x){
+#   for (i in 1:n){
+#     h5read(fn, "/hydro/data/channel stage", index = list(NULL, NULL, x))
+#   }
+# }
+# microbenchmark(
+#   h5read_loop(2, 1:720),
+#   h5read_loop(50, 1:28),
+#   h5read_loop(100, 1:14)
+# )
+# # it is much faster to read in bigger chunks
 
 
