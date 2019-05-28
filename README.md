@@ -13,6 +13,8 @@ Figure 3. Color-scaled channel map of the comparative map analysis feature of th
 
 ### Installation
 
+If you want to learn more about the DSM2 Viz Tool, you can install it and play around with the example files. If you just want a quick peek at the core ideas, then take a look at the [Delta Hydrodynamics app](https://fishsciences.shinyapps.io/delta-hydrodynamics/).
+
 To install on Mac, download the [zip file](https://s3-us-west-2.amazonaws.com/datavore/DSM2-Viz-Tool/DSM2-Viz-Tool-darwin-x64-0.2.0.zip), unzip the file, and move the application to your preferred location. To uninstall, move the application to the trash.
 
 To install on Windows, download and run the [setup file](https://s3-us-west-2.amazonaws.com/datavore/DSM2-Viz-Tool/DSM2-Viz-Tool-0.2.0+Setup.exe). When setup is complete, the application will launch automatically. The application can be uninstalled through the standard Windows uninstall procedures.
