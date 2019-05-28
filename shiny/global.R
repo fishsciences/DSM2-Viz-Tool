@@ -7,12 +7,11 @@ library(rhdf5)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-library(lubridate)
+library(lubridate) 
 library(shinyjs)
-library(scales)
-library(shinyFiles)
-library(DT)
-
+library(scales)   # rescale()
+library(shinyFiles) 
+library(DT) 
 
 # on windows system uses Cairo for anti-aliasing of plots
 # is not a problem when run on windows system through R but was a problem with Electron app

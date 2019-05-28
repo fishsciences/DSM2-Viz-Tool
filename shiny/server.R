@@ -772,7 +772,7 @@ function(input, output, session) {
       sendSweetAlert(
         session = session,
         title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-        text = "Selecting HDF5 files populates the Metadata tab with tables of the start and end dates, time interval, and channels included in the selected files.
+        text = "Selecting HDF5 files populates the Metadata tab with tables related to the start and end dates, time intervals, and channels included in the selected files.
         
         The date range input allows for reading subsets of the selected HDF5 files. If the selected HDF5 files have start and end dates that span multiple water years, then the date range is constrained by the selected water year to limit the data reading time. Similarly, data is only read for the upstream or downstream node of each channel.
         
@@ -786,7 +786,7 @@ function(input, output, session) {
         title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
         text = "Selecting a file for use as a baseline scenario has no effect on the time series plots; it is only used in the comparative analysis.
       
-      The date range on the 'Time Series' tab is initially set from the date range on the Metadata tab. Changing the date range allows for zooming in/out on the time series plots. The comparative analysis is based on the date range selected on the 'Time Series' tab.",
+        The date range on the 'Time Series' tab is initially set from the date range on the Metadata tab. Changing the date range allows for zooming in/out on the time series plots. The comparative analysis is based on the date range selected on the 'Time Series' tab.",
         type = "info",
         btn_labels = "OK"
       )

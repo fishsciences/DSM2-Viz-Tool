@@ -6,7 +6,7 @@ wget https://cloud.r-project.org/bin/windows/base/R-3.6.0-win.exe \
 cd r-win
 innoextract -e latest_r.exe
 mv app/* ../r-win
-rm -r app latest_r.exe 
+rm -r app latest_r.exe
 
 # Remove unneccessary files TODO: What else?
-rm -r doc tests 
+rm -r doc tests
