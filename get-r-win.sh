@@ -1,3 +1,11 @@
+# I broke this shell script when I opened it in notepad
+# solution: https://learningintheopen.org/2013/03/07/microsoft-windows-cygwin-error-r-command-not-found/
+# To fix:
+# Launch Notepad++
+# Load the Bash Script File
+# Access the menu items “Edit\EOL Conversion\Unix Format”
+# Re-save file (File \ Save)
+
 # Download and extract the Windows binary install
 # Requires innoextract installed in the Dockerfile
 mkdir r-win
