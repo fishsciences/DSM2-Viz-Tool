@@ -16,7 +16,6 @@ function(input, output, session) {
   shinyFileChoose(input, "h5_files", roots = volumes, filetypes = c("h5"), session = session)
   
   filePaths <- reactive({
-    rv[["H5"]] = NULL   # reset rv[["H5"]]; only relevant if user selects files multiple times in a session
     parseFilePaths(volumes, input[["h5_files"]])
   })
   
@@ -69,15 +68,11 @@ function(input, output, session) {
   })
   
   wyInteger <- reactive({
+    req(input[["sel_water_year"]])
     as.integer(input[["sel_water_year"]])
   })
   
   datesListWaterYear <- reactive({
-    # banged my head against the wall for a long time with this one
-    # input[["sel_water_year"]] should update when waterYears() changes but
-    # if you select a new set of files, then the input[["sel_water_year"]] update lags and the old water year is used, which causes the app to crash
-    # all of that is avoided with the 2nd condition in this req() statement
-    req(input[["sel_water_year"]], input[["sel_water_year"]] %in% waterYears())  
     d = h5Metadata()
     wy = wyInteger()
     wydr = ymd_hms(paste0(c(wy - 1L, wy), c("-10-01 00:00:00", "-09-30 23:59:59")))
@@ -94,13 +89,8 @@ function(input, output, session) {
     return(out)
   })
   
-  drrPOSIX <- reactive({
-    # date range doesn't include times; setting datetime to max possible duration
-    ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
-  })
-  
   datesListWaterYearSub <- reactive({
-    drr = drrPOSIX()
+    drr = ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
     dlwy = datesListWaterYear()
     out = list()
     for (i in names(dlwy)){
@@ -111,18 +101,12 @@ function(input, output, session) {
     return(out)
   })
   
-  datesTibbleWaterYear <- reactive({
-    bind_rows(datesListWaterYear(), .id = "Scenario")
-  })
-  
   # ** intervals ----------------------------------------------------------------
   
   intervals <- reactive({
-    req(input[["sel_water_year"]], input[["sel_water_year"]] %in% waterYears())
     d = h5Metadata()
     wy = wyInteger()
-    drr = drrPOSIX()
-    out = list()
+    drr = ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
     for (i in 1:nrow(d)){
       if (wy >= d[["start_wy"]][i] & wy <= d[["end_wy"]][i]){
         first_date = if_else(d[["start_date"]][i] > drr[1], d[["start_date"]][i], drr[1])
@@ -146,6 +130,39 @@ function(input, output, session) {
     style = "bootstrap", rownames = FALSE, caption = "Table 2. Number of time intervals in selected HDF5 files.",
     options = list(searching = FALSE, bPaginate = FALSE, info = FALSE, scrollX = TRUE)
   )
+  
+  # ** dynamic UI ----------------------------------------------------------------
+  
+  observe({
+    cond = !is.null(rv[["H5"]])
+    toggle("metadata_msg", condition = !cond)
+  })
+  
+  observe({
+    req(rv[["H5"]])
+    cond = max(intervals()[["num_intervals_in_range"]]) > 1
+    toggle("node_loc", condition = cond)
+    toggle("read_data", condition = cond)
+    toggle("date_range_read_warn", condition = !cond)
+  })
+  
+  # had problems with updatePickerInput so resorted to renderUI
+  output$selWaterYear <- renderUI({
+    wy = waterYears()
+    pickerInput(inputId = "sel_water_year", label = "Select water year", choices = wy, selected = max(wy),
+                options = list(`live-search` = TRUE, size = 10))
+  })
+  
+  # had problems with updateDateRangeInput so resorted to renderUI
+  output$dateRangeRead <- renderUI({
+    d = bind_rows(datesListWaterYear(), .id = "Scenario")
+    validate(need(nrow(d) > 0, ""))
+    min_date = floor_date(min(d[["Date"]], na.rm = TRUE), unit = "day")
+    max_date = floor_date(max(d[["Date"]], na.rm = TRUE), unit = "day")
+    dateRangeInput('date_range_read', label = 'Date range',
+                   start = min_date, end = max_date,
+                   min = min_date, max = max_date)
+  })
   
   # ** channels ----------------------------------------------------------------
   
@@ -208,6 +225,7 @@ function(input, output, session) {
     return(out)
   })
   
+  
   # ** read data ----------------------------------------------------------------
   
   observeEvent(input[["read_data"]],{
@@ -238,36 +256,7 @@ function(input, output, session) {
   })#/Read Button
   
   
-  # ** dynamic UI ----------------------------------------------------------------
-  
-  observe({
-    cond = !is.null(rv[["H5"]])
-    toggle("metadata_msg", condition = !cond)
-    toggle("sel_water_year", condition = cond & length(waterYears()) > 1)
-    toggle("date_range_read", condition = cond)
-  })
-  
-  observe({
-    req(rv[["H5"]])
-    cond = max(intervals()[["num_intervals_in_range"]]) > 1
-    toggle("node_loc", condition = cond)
-    toggle("read_data", condition = cond)
-    toggle("date_range_read_warn", condition = !cond)
-  })
-  
-  observe({
-    wy = waterYears()
-    updatePickerInput(session, "sel_water_year", choices = wy, selected = max(wy))
-  })
-  
-  observe({
-    d = datesTibbleWaterYear()
-    min_date = floor_date(min(d[["Date"]], na.rm = TRUE), unit = "day")
-    max_date = floor_date(max(d[["Date"]], na.rm = TRUE), unit = "day")
-    updateDateRangeInput(session, "date_range_read",
-                         start = min_date, end = max_date, 
-                         min = min_date, max = max_date)
-  })
+
   
   # * Time Series tab  ----------------------------------------------------------------
   

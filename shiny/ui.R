@@ -1,3 +1,6 @@
+library(reactlog)
+options(shiny.reactlog = TRUE)
+
 navbarPage(
   "DSM2 HYDRO Visualization Tool",
   id = "nav_tabs",
@@ -46,9 +49,8 @@ navbarPage(
             )
           ),
           br(),
-          hidden(pickerInput(inputId = "sel_water_year", label = "Select water year", choices = NULL,
-                             options = list(`live-search` = TRUE, size = 10))),
-          hidden(dateRangeInput('date_range_read', label = 'Date range')),
+          uiOutput("selWaterYear"),
+          uiOutput("dateRangeRead"),
           hidden(radioGroupButtons(inputId = "node_loc", label = "Nodes",
                                    choices = c("Upstream", "Downstream"),
                                    selected = "Upstream", justified = TRUE)),
@@ -164,11 +166,11 @@ navbarPage(
             width = siw,
             label = "Background map",
             choices = c(
-              "BlackAndWhite" = "OpenStreetMap.BlackAndWhite",
+              "WorldGrayCanvas" = "Esri.WorldGrayCanvas",
               "WorldTopoMap" = "Esri.WorldTopoMap",
               "WorldImagery" = "Esri.WorldImagery"
             ),
-            selected = "OpenStreetMap.BlackAndWhite"
+            selected = "Esri.WorldGrayCanvas"
           ),
           selectInput(
             inputId = "map_pal",
