@@ -255,9 +255,6 @@ function(input, output, session) {
     updateTabsetPanel(session, "explore_tabs", selected = "Time Series") # change tab after clicking on process output button
   })#/Read Button
   
-  
-
-  
   # * Time Series tab  ----------------------------------------------------------------
   
   # ** dates  ----------------------------------------------------------------
@@ -284,7 +281,6 @@ function(input, output, session) {
   
   # check that at least two observations for at least one scenario 
   obsCheck <- reactive({
-    # str(velocityTibble())
     req(rv[["VELOCITY"]])
     if (nrow(velocityTibble()) > 1){
       scenario_rows = velocityTibble() %>% 

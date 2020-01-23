@@ -11,7 +11,8 @@ library(lubridate)
 library(shinyjs)
 library(scales)   # rescale()
 library(shinyFiles) 
-library(DT) 
+library(DT)
+library(shinybusy)
 
 # on windows system uses Cairo for anti-aliasing of plots
 # is not a problem when run on windows system through R but was a problem with Electron app

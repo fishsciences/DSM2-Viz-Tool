@@ -11,6 +11,7 @@ navbarPage(
     "Exploratory",
     useShinyjs(),
     useSweetAlert(),
+    add_busy_bar(color = "#919191"),
     sidebarLayout(
       # * sidebar panel -----------------------------------------------------
       sidebarPanel(
