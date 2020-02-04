@@ -39,9 +39,9 @@ function(input, output, session) {
       mutate(interval = gsub("(\\d+)", "\\1 ", interval), 
              end_date = calc_end_date(start_date, num_intervals, interval),
              start_date = ymd_hms(start_date),
-             end_date = ymd_hms(end_date),
-             start_wy = water_year(start_date),
-             end_wy = water_year(end_date))
+             end_date = ymd_hms(end_date))
+             # start_wy = water_year(start_date),
+             # end_wy = water_year(end_date))
     h5closeAll()
     return(out)
   })
@@ -58,43 +58,22 @@ function(input, output, session) {
   
   # ** dates ----------------------------------------------------------------
   
-  waterYears <- reactive({
+  datesListRead <- reactive({
     d = h5Metadata()
-    out = c()
-    for (i in 1:nrow(d)){
-      out = c(out, d[["start_wy"]][i]:d[["end_wy"]][i])
-    }
-    return(sort(out[!duplicated(out)], decreasing = TRUE))
-  })
-  
-  wyInteger <- reactive({
-    req(input[["sel_water_year"]])
-    as.integer(input[["sel_water_year"]])
-  })
-  
-  datesListWaterYear <- reactive({
-    d = h5Metadata()
-    wy = wyInteger()
-    wydr = ymd_hms(paste0(c(wy - 1L, wy), c("-10-01 00:00:00", "-09-30 23:59:59")))
     out = list()
     for (i in 1:nrow(d)){
-      if (wy >= d[["start_wy"]][i] & wy <= d[["end_wy"]][i]){
-        # this first_date/last_date stuff is for scenario where start and end dates are less than a full water year
-        first_date = if_else(d[["start_date"]][i] > wydr[1], d[["start_date"]][i], wydr[1])
-        last_date = if_else(d[["end_date"]][i] < wydr[2], d[["end_date"]][i], wydr[2])
-        out[[d[["scenario"]][i]]] = tibble(Date = seq(from = first_date, to = last_date, by = d[["interval"]][i]),
-                                           Index = get_date_indexes(d[["start_date"]][i], first_date, last_date, d[["interval"]][i]))
-      }
+      out[[d[["scenario"]][i]]] = tibble(Date = seq(from = d[["start_date"]][i], to = d[["end_date"]][i], by = d[["interval"]][i]),
+                                         Index = get_date_indexes(d[["start_date"]][i], d[["start_date"]][i], d[["end_date"]][i], d[["interval"]][i]))
     }
     return(out)
   })
   
-  datesListWaterYearSub <- reactive({
+  datesListReadSub <- reactive({
     drr = ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
-    dlwy = datesListWaterYear()
+    dlr = datesListRead()
     out = list()
-    for (i in names(dlwy)){
-      out[[i]] = filter(dlwy[[i]], Date >= drr[1] & Date <= drr[2])
+    for (i in names(dlr)){
+      out[[i]] = filter(dlr[[i]], Date >= drr[1] & Date <= drr[2])
       # After reading data, the original index will be lost; need new index for subsetting data in visualization step 
       out[[i]][["SubIndex"]] = if (nrow(out[[i]]) > 0) 1:length(out[[i]][["Date"]]) else NULL 
     }
@@ -105,21 +84,16 @@ function(input, output, session) {
   
   intervals <- reactive({
     d = h5Metadata()
-    wy = wyInteger()
     drr = ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
     for (i in 1:nrow(d)){
-      if (wy >= d[["start_wy"]][i] & wy <= d[["end_wy"]][i]){
-        first_date = if_else(d[["start_date"]][i] > drr[1], d[["start_date"]][i], drr[1])
-        last_date = if_else(d[["end_date"]][i] < drr[2], d[["end_date"]][i], drr[2])
-        int_num = get_interval_number(first_date, last_date, d[["interval"]][i])
-        d[["num_intervals_in_range"]][i] = ifelse(int_num < 0, 0, int_num)
-      }else{
-        d[["num_intervals_in_range"]][i] = 0 # if selected water year is outside of range of water years in a file, then zero intervals are in the date range
-      }
+      first_date = if_else(d[["start_date"]][i] > drr[1], d[["start_date"]][i], drr[1])
+      last_date = if_else(d[["end_date"]][i] < drr[2], d[["end_date"]][i], drr[2])
+      int_num = get_interval_number(first_date, last_date, d[["interval"]][i])
+      d[["num_intervals_in_range"]][i] = ifelse(int_num < 0, 0, int_num)
     }
     return(d)
   })
-  
+
   intervalSub <- reactive({
     intervals() %>% filter(num_intervals_in_range > 1)
   })
@@ -136,6 +110,9 @@ function(input, output, session) {
   observe({
     cond = !is.null(rv[["H5"]])
     toggle("metadata_msg", condition = !cond)
+    toggleState("h5_files", condition = !cond)
+    toggle("reload_app", condition = cond)
+    toggle("date_range_read", condition = cond)
   })
   
   observe({
@@ -143,25 +120,22 @@ function(input, output, session) {
     cond = max(intervals()[["num_intervals_in_range"]]) > 1
     toggle("node_loc", condition = cond)
     toggle("read_data", condition = cond)
-    toggle("date_range_read_warn", condition = !cond)
+    toggle("date_range_read_warn_small", condition = !cond)
   })
   
-  # had problems with updatePickerInput so resorted to renderUI
-  output$selWaterYear <- renderUI({
-    wy = waterYears()
-    pickerInput(inputId = "sel_water_year", label = "Select water year", choices = wy, selected = max(wy),
-                options = list(`live-search` = TRUE, size = 10))
+  observe({
+    req(rv[["H5"]])
+    cond = max(intervals()[["num_intervals_in_range"]]) > 35040 # threshold based on 1 year of 15-min intervals; b/c warning message advises selecting less than one year
+    toggle("date_range_read_warn_large", condition = cond)
   })
   
-  # had problems with updateDateRangeInput so resorted to renderUI
-  output$dateRangeRead <- renderUI({
-    d = bind_rows(datesListWaterYear(), .id = "Scenario")
-    validate(need(nrow(d) > 0, ""))
+  observe({
+    d = bind_rows(datesListRead(), .id = "Scenario")
     min_date = floor_date(min(d[["Date"]], na.rm = TRUE), unit = "day")
     max_date = floor_date(max(d[["Date"]], na.rm = TRUE), unit = "day")
-    dateRangeInput('date_range_read', label = 'Date range',
-                   start = min_date, end = max_date,
-                   min = min_date, max = max_date)
+    updateDateRangeInput(session, "date_range_read",
+                         start = min_date, end = max_date, 
+                         min = min_date, max = max_date)
   })
   
   # ** channels ----------------------------------------------------------------
@@ -225,25 +199,24 @@ function(input, output, session) {
     return(out)
   })
   
-  
   # ** read data ----------------------------------------------------------------
   
   observeEvent(input[["read_data"]],{
-    rv[["H5META"]] = rv[["STAGE"]] = rv[["FLOW"]] = rv[["AREA"]] = rv[["VELOCITY"]] = rv[["DLWYS"]] = rv[["DRR"]] = rv[["CL"]] = rv[["ACC"]] = NULL # clear out previous results
+    rv[["H5META"]] = rv[["STAGE"]] = rv[["FLOW"]] = rv[["AREA"]] = rv[["VELOCITY"]] = rv[["DLRS"]] = rv[["DRR"]] = rv[["CL"]] = rv[["ACC"]] = NULL # clear out previous results
     
     rv[["H5META"]] = h5Metadata()
-    rv[["DLWYS"]] = datesListWaterYearSub()
+    rv[["DLRS"]] = datesListReadSub() 
     rv[["DRR"]] = input[["date_range_read"]]
     rv[["ACC"]] = allCommonChannels()
     rv[["CL"]] = lapply(channelList(), filter, Channel %in% rv[["ACC"]])
     nl = lapply(nodeList(), filter, NodeLoc == input[["node_loc"]]) # don't need to store in rv because only two options; once one is selected don't need to track any more
     
     withProgress(message = 'Reading...', value = 0, detail = "Stage",{
-      rv[["STAGE"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLWYS"]], "/data/channel stage")
+      rv[["STAGE"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLRS"]], "/data/channel stage")
       setProgress(2.5/10, detail = "Flow")
-      rv[["FLOW"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLWYS"]], "/data/channel flow")
+      rv[["FLOW"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLRS"]], "/data/channel flow")
       setProgress(5/10, detail = "Area")
-      rv[["AREA"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLWYS"]], "/data/channel area")
+      rv[["AREA"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLRS"]], "/data/channel area")
       setProgress(7.5/10, message = "Calculating...", detail = "Velocity")
       rv[["VELOCITY"]] = list()
       for (i in names(rv[["FLOW"]])){
@@ -260,9 +233,9 @@ function(input, output, session) {
   # ** dates  ----------------------------------------------------------------
   
   datesList <- reactive({
-    req(rv[["DLWYS"]])
+    req(rv[["DLRS"]])
     drv = ymd_hms(paste(input[["date_range_viz"]], c("00:00:00", "23:59:59")))
-    lapply(rv[["DLWYS"]], filter, Date >= drv[1] & Date <= drv[2])
+    lapply(rv[["DLRS"]], filter, Date >= drv[1] & Date <= drv[2])
   })
   
   # ** velocity  ----------------------------------------------------------------
@@ -376,10 +349,10 @@ function(input, output, session) {
   observe({
     drr = rv[["DRR"]]
     updateDateRangeInput(session, "date_range_viz",
-                         start = drr[1], end = drr[2], 
+                         start = drr[1], end = drr[2],
                          min = drr[1], max = drr[2])
   })
-  
+
   observe({
     sc = sort(names(rv[["FLOW"]]))
     updatePickerInput(session, "sel_scenarios", choices = sc, selected = sc)

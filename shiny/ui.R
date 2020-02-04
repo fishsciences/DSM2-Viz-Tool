@@ -1,6 +1,3 @@
-library(reactlog)
-options(shiny.reactlog = TRUE)
-
 navbarPage(
   "DSM2 HYDRO Visualization Tool",
   id = "nav_tabs",
@@ -18,7 +15,16 @@ navbarPage(
         tags$style(HTML("hr {border-top: 1px solid #b5b5b5;}")),
         conditionalPanel(
           condition = 'input.explore_tabs == "Metadata"',
+          hidden(
+            actionButton(
+              inputId = "reload_app",
+              label = "Reload app to select new files",
+              icon = icon("redo"),
+              onclick = "history.go(0)"
+            )
+          ),
           fluidRow(
+            br(),
             column(2,
                    dropdownButton(
                      actionButton(
@@ -49,16 +55,18 @@ navbarPage(
                    )
             )
           ),
-          br(),
-          uiOutput("selWaterYear"),
-          uiOutput("dateRangeRead"),
+          br(),    
+          hidden(dateRangeInput('date_range_read', label = 'Date range')),
           hidden(radioGroupButtons(inputId = "node_loc", label = "Nodes",
                                    choices = c("Upstream", "Downstream"),
                                    selected = "Upstream", justified = TRUE)),
-          hidden(helpText(id = "date_range_read_warn",
+          hidden(helpText(id = "date_range_read_warn_small",
                           "Please select date range to include at least one scenario with >1 interval (see Table 2).")),
           br(),
-          p(align = "center", hidden(actionButton(inputId = "read_data", label = "Read Data", icon = icon("spinner"))))
+          p(align = "center", hidden(actionButton(inputId = "read_data", label = "Read Data", icon = icon("spinner")))),
+          hidden(helpText(id = "date_range_read_warn_large",
+                          "Warning: Date range includes large number of intervals (see Table 2); reading data will be slow and may run out of memory. 
+                          It is recommended to select less than one year of data because differences between scenarios are likely to be swamped by seasonal and annual variation.")),
         ),
         conditionalPanel(
           condition = 'input.explore_tabs == "Time Series"',
