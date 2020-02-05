@@ -111,7 +111,7 @@ function(input, output, session) {
     cond = !is.null(rv[["H5"]])
     toggle("metadata_msg", condition = !cond)
     toggleState("h5_files", condition = !cond)
-    toggle("reload_app", condition = cond)
+    toggle("reset_app", condition = cond)
     toggle("date_range_read", condition = cond)
   })
   

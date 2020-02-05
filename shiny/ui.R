@@ -15,12 +15,14 @@ navbarPage(
         tags$style(HTML("hr {border-top: 1px solid #b5b5b5;}")),
         conditionalPanel(
           condition = 'input.explore_tabs == "Metadata"',
-          hidden(
-            actionButton(
-              inputId = "reload_app",
-              label = "Reload app to select new files",
-              icon = icon("redo"),
-              onclick = "history.go(0)"
+          p(align = "center", 
+            hidden(
+              actionButton(
+                inputId = "reset_app",
+                label = "Reset Application",
+                icon = icon("redo"),
+                onclick = "history.go(0)"
+              )
             )
           ),
           fluidRow(
