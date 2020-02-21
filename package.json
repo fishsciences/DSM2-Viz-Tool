@@ -1,7 +1,7 @@
 {
   "name": "DSM2-Viz-Tool",
   "productName": "DSM2-Viz-Tool",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A tool for visualizing DSM2 HYDRO output",
   "main": "src/index.js",
   "scripts": {

@@ -729,71 +729,124 @@ function(input, output, session) {
     if (input[["explore_tabs"]] == "Metadata"){
       sendSweetAlert(
         session = session,
-        title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-        text = "Selecting HDF5 files populates the Metadata tab with tables related to the start and end dates, time intervals, and channels included in the selected files.
-        
-        The date range input allows for reading subsets of the selected HDF5 files. If the selected HDF5 files have start and end dates that span multiple water years, then the date range is constrained by the selected water year to limit the data reading time. Similarly, data is only read for the upstream or downstream node of each channel.
-        
-        Click the 'Read Data' button to read the specified subset of the stage, flow, and channel area output; velocity is calculated by dividing flow by channel area.",
+        title = "",             
+        text = 
+          tags$span(
+            tags$p(align="left",
+                   "Selecting HDF5 files reads the metadata (but not data) for each selected file and populates the Metadata tab with 
+                   tables related to the start and end dates, time intervals, and channels included in the selected files."
+            ),
+            tags$p(align="left",
+                   "Because the HDF5 files might contain large amounts of data, the user can select a date range 
+                   (based on the file metadata) to read a subset of the file to reduce the time that DSM2 Viz spends 
+                   reading data. The app also requires that the user selects the upstream or downstream node for each 
+                   channel. We have created an ", tags$a(href="https://fishsciences.shinyapps.io/dsm2-map/", "interactive map"), " showing DSM2 
+                   channels and nodes, including the upstream and downstream node."
+            ),
+            tags$p(align="left",
+                   "Click the 'Read Data' button to read the specified subset of the stage, flow, and channel 
+                   area output; velocity is calculated by dividing flow by channel area."
+            )
+          ),
         type = "info",
         btn_labels = "OK"
       )
     }else{
       sendSweetAlert(
         session = session,
-        title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-        text = "Selecting a file for use as a baseline scenario has no effect on the time series plots; it is only used in the comparative analysis.
-      
-        The date range on the 'Time Series' tab is initially set from the date range on the Metadata tab. Changing the date range allows for zooming in/out on the time series plots. The comparative analysis is based on the date range selected on the 'Time Series' tab.",
+        title = "",             
+        text = 
+          tags$span(
+            tags$p(align="left",
+                   "The date range on the Time Series tab is initially set from the date range on the Metadata tab. 
+                   Changing the date range allows for zooming in/out on the time series plots. The comparative 
+                   analysis is based on the date range selected on the Time Series tab."
+            ),
+            tags$p(align="left",
+                   "Selecting a file for use as a baseline scenario has no effect on the time series plots; 
+                   it is only used in the comparative analysis."
+            )
+          ),
         type = "info",
         btn_labels = "OK"
       )
     }
-    
   })
   
   observeEvent(input[["map_info"]], {
     if (is.null(rv[["PO"]])){
       sendSweetAlert(
         session = session,
-        title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-        text = "This is the default channel map. When DSM2 HYDRO output files are selected and read and the comparative analysis is run, this map will show the color-scaled results of the comparative analysis.",
+        title = "",             
+        text = 
+          tags$p(align="left",
+                 "This is the default channel map. When DSM2 HYDRO output files are selected and read, and the 
+                 comparative analysis is run, this map will show the color-scaled results of the comparative analysis."
+                 ),
         type = "info",
         btn_labels = "OK"
       )
     }else{
       sendSweetAlert(
         session = session,
-        title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-        text = "Clicking on a channel pans to the selected channel and updates the 'Selected channel' input in the top left panel.
-        
-        Overlap is the proportion overlap in the density distributions for the selected comparison. Proportion overlap ranges from 0 to 1.
-        
-        Difference is the absolute difference in the selected summary statistic for the selected comparison. The absolute difference values are rescaled across channels and scenarios to values ranging from 0 to 1; except for 'Reversal' which naturally ranges from 0 to 1.
-        
-        By default, map color is scaled from 0 to 1. To adjust the map color range, click on 'Show map tools' in the top left panel.
-        
-        When the 'Remove channels' switch is on (under 'Show map tools'), clicking on a channel removes that channel from the map.",
+        title = "",             
+        text = 
+          tags$span(
+            tags$p(align="left",
+                   "Clicking on a channel pans to the selected channel and updates the 'Selected channel' input in 
+                   the top left panel."
+            ),
+            tags$p(align="left",
+                   "Overlap is the proportion overlap in the density distributions for the selected comparison. 
+                   Proportion overlap ranges from 0 to 1."
+            ),
+            tags$p(align="left",
+                   "Difference is the absolute difference in the selected summary statistic for the selected comparison. 
+                   The absolute difference values are rescaled across channels and scenarios to values ranging from 0 to 1; 
+                   except for 'Reversal' which naturally ranges from 0 to 1."
+            ),
+            tags$p(align="left",
+                   "By default, map color is scaled from 0 to 1. To adjust the map color range, click on 
+                   'Show map tools' in the top left panel."
+            ),
+            tags$p(align="left",
+                   "When the 'Remove channels' switch is on (under 'Show map tools'), clicking on a channel removes 
+                   that channel from the map."
+            )
+          ),
         type = "info",
         btn_labels = "OK"
       )
     }
-    
   })
   
   observeEvent(input[["plot_info"]], {
     sendSweetAlert(
       session = session,
-      title = "",             # longer paragraphs have long lines b/c returns are interpreted as line breaks (which is useful)
-      text = "The density plot shows the distribution of velocity/flow/stage values over the selected date range for the selected comparison. 
-      
-      The rescaled absolute difference in the selected summary statistic and proportion overlap of the distributions are shown in the top left and top right corners of the plot, respectively.
-      
-      The dashed vertical lines show the value of the selected summary statistic. Vertical lines are not displayed when Reversal is selected as the summary statistic. 
-
-      Reversal is the proportion of values that are negative. Reversal only applies to flow and velocity, not stage.
-      
-      The minimum and maximum summary statistics do not always align with the minimum and maximum extent of the distributions because the density estimates are based on a smoothing kernel.",
+      title = "",          
+      text = 
+        tags$span(
+          tags$p(align="left",
+                 "The density plot shows the distribution of velocity/flow/stage values over the selected date range 
+                 for the selected comparison." 
+          ),
+          tags$p(align="left",
+                 "The rescaled absolute difference in the selected summary statistic and proportion overlap of 
+                 the distributions are shown in the top left and top right corners of the plot, respectively."
+          ),
+          tags$p(align="left",
+                 "The dashed vertical lines show the value of the selected summary statistic. Vertical lines are 
+                 not displayed when Reversal is selected as the summary statistic." 
+          ),
+          tags$p(align="left",
+                 "Reversal is the proportion of values that are negative. Reversal only applies to flow and velocity, 
+                 not stage."
+          ),
+          tags$p(align="left",
+                 "The minimum and maximum summary statistics do not always align with the minimum and maximum extent 
+                 of the distributions because the density estimates are based on a smoothing kernel."
+          )
+        ),
       type = "info",
       btn_labels = "OK"
     )
