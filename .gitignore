@@ -11,3 +11,4 @@ shiny/.RData
 shiny/.Ruserdata
 shiny/rsconnect
 shiny/DSM2-Viz-Tool.Rproj
+.DS_Store
