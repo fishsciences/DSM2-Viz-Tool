@@ -29,27 +29,19 @@ function(input, output, session) {
   h5Metadata <- reactive({
     req(rv[["H5"]])
     # extract metadata; h5_read_attr() is wrapper to h5readAttributes (see helper.R) 
-    out = rv[["H5"]] %>% 
-      as_tibble() %>% 
-      left_join(h5_read_attr(rv[["H5"]], "/data/channel flow", "start_time", "start_date"), by = "scenario") %>%
-      left_join(h5_read_attr(rv[["H5"]], "/data/channel flow", "interval", "interval"), by = "scenario") %>% 
-      left_join(h5_read_attr(rv[["H5"]], "", "Number of channels", "num_channels"), by = "scenario") %>% 
-      left_join(h5_read_attr(rv[["H5"]], "", "Number of intervals", "num_intervals"), by = "scenario") %>% 
-      # adapted from https://stackoverflow.com/questions/36354225/insert-a-space-in-a-string-containing-alphanumeric-characters-at-the-beginning-a
-      mutate(interval = gsub("(\\d+)", "\\1 ", interval), 
-             end_date = calc_end_date(start_date, num_intervals, interval),
+    h5_read_attr(rv[["H5"]]) %>% 
+      mutate(interval_vals = as.numeric(gsub('\\D','', interval)),
+             interval_units = gsub('\\d','', interval),
              start_date = ymd_hms(start_date),
-             end_date = ymd_hms(end_date))
-             # start_wy = water_year(start_date),
-             # end_wy = water_year(end_date))
-    h5closeAll()
-    return(out)
+             end_date = calc_end_date(start_date, num_intervals, 
+                                      interval_vals, interval_units))
   })
-  
+  #     end_date = as.character(end_date)
+  #     out[i] = ifelse(nchar(end_date) > 10, end_date, paste(end_date, "00:00:00")) # time of 00:00:00 gets dropped; adding it for consistency
   output$metadataTable = renderDT({
     h5Metadata() %>% 
       mutate(start_date = as.character(start_date),
-             end_date = as.character(end_date)) %>% 
+             end_date = as.character(end_date)) %>%
       select(Scenario = scenario, `Start Date` = start_date, `End Date` = end_date,
              Interval = interval, Channels = num_channels)},
     style = "bootstrap", rownames = FALSE, caption = "Table 1. Basic metadata for selected HDF5 files.",
@@ -62,8 +54,10 @@ function(input, output, session) {
     d = h5Metadata()
     out = list()
     for (i in 1:nrow(d)){
-      out[[d[["scenario"]][i]]] = tibble(Date = seq(from = d[["start_date"]][i], to = d[["end_date"]][i], by = d[["interval"]][i]),
-                                         Index = get_date_indexes(d[["start_date"]][i], d[["start_date"]][i], d[["end_date"]][i], d[["interval"]][i]))
+      out[[d[["scenario"]][i]]] = tibble(Date = seq(from = d[["start_date"]][i], to = d[["end_date"]][i], 
+                                                    by = paste(d[["interval_vals"]][i], d[["interval_units"]][i])),
+                                         Index = get_date_indexes(d[["start_date"]][i], d[["start_date"]][i], d[["end_date"]][i],
+                                                                  d[["interval_vals"]][i], d[["interval_units"]][i]))
     }
     return(out)
   })
@@ -88,7 +82,7 @@ function(input, output, session) {
     for (i in 1:nrow(d)){
       first_date = if_else(d[["start_date"]][i] > drr[1], d[["start_date"]][i], drr[1])
       last_date = if_else(d[["end_date"]][i] < drr[2], d[["end_date"]][i], drr[2])
-      int_num = get_interval_number(first_date, last_date, d[["interval"]][i])
+      int_num = get_interval_number(first_date, last_date, d[["interval_vals"]][i], d[["interval_units"]][i])
       d[["num_intervals_in_range"]][i] = ifelse(int_num < 0, 0, int_num)
     }
     return(d)
@@ -323,7 +317,7 @@ function(input, output, session) {
   intervalCheck <- reactive({
     req(input[["sel_scenarios"]])
     # check if all selected scenarios use the same time interval
-    length(unique(filter(rv[["H5META"]], scenario %in% input[["sel_scenarios"]])[["interval"]])) == 1
+    length(unique(filter(rv[["H5META"]], scenario %in% input[["sel_scenarios"]])[["interval_units"]])) == 1
   })
   
   observe({

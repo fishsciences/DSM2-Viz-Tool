@@ -1,33 +1,28 @@
 # package dependencies not listed here
 
-h5_read_attr <- function(data, name, attr, col.name){
+h5_read_attr <- function(data){
   # wrapper around rhdf5::h5readAttributes
-  # loop through selected files to extract metadata
-  out = c()  # not pre-allocating because not sure about type of attribute (but probably should be)
-  for (i in 1:nrow(data)){ # h5readAttributes is not vectorized
-    out = c(out, h5readAttributes(data[["datapath"]][i], paste0("/hydro", name))[[attr]])
-  }
-  out.df = select(data, scenario)
-  out.df[[col.name]] = out
-  return(out.df)
+  
+  hydro_attr <- lapply(data[["datapath"]], h5readAttributes, "/hydro")
+  time_attr <- lapply(data[["datapath"]], h5readAttributes, "/hydro/data/channel flow")
+  h5closeAll()
+  data.frame(scenario = data[["scenario"]],
+             start_date = sapply(time_attr, "[[", "start_time"),
+             interval = sapply(time_attr, "[[", "interval"),
+             num_channels = sapply(hydro_attr, "[[", "Number of channels"),
+             num_intervals = sapply(hydro_attr, "[[", "Number of intervals"))
 }
 
-calc_end_date <- function(start_date, num_intervals, by){
-  # fragile, inelegant function
+calc_end_date <- function(start_date, num_intervals, interval_vals, interval_units){
   # only accepts min, hour, and day as by argument
   # DSM2 output files don't include end date in metadata (as far as I know)
-  start_date = ymd_hms(start_date)
-  out = vector(mode = "character", length = length(by))
-  for (i in 1:length(by)){
-    by_vec = strsplit(by[i], " ", fixed = TRUE)[[1L]]
-    total_time = (num_intervals[i] - 1) * as.numeric(by_vec[1])
-    if (by_vec[2] == "min")  end_date = start_date[i] + minutes(total_time)
-    if (by_vec[2] == "hour") end_date = start_date[i] + hours(total_time)
-    if (by_vec[2] == "day")  end_date = start_date[i] + days(total_time)
-    end_date = as.character(end_date)
-    out[i] = ifelse(nchar(end_date) > 10, end_date, paste(end_date, "00:00:00")) # time of 00:00:00 gets dropped; adding it for consistency
-  }
-  return(out)
+  total_time <- (num_intervals - 1) * interval_vals
+  # translate units to a lubridate function
+  funcs <- list("min" = minutes, "hour" = hours, "day" = days)
+  # using do.call to unlist without losing date formatting
+  end_date <- do.call("c", mapply(function(f, start, tt) start + f(tt), 
+                                  funcs[interval_units], start_date, total_time, 
+                                  USE.NAMES = FALSE, SIMPLIFY = FALSE))
 }
 
 water_year <- function(x){
@@ -36,30 +31,24 @@ water_year <- function(x){
   as.integer(format(x, "%Y")) + ifelse(as.integer(format(x, "%m")) >= 10L, 1L, 0L)
 }
 
-get_interval_number <- function(start, end, by){
+get_interval_number <- function(start, end, interval_vals, interval_units){
   # find the number of intervals in a date range
-  gd = get_difftime(start, end, by)
-  return(1L + floor(gd[[3]]/gd[[1]]))
+  # need plural interval_units for difftime
+  interval_units <- paste0(interval_units, "s")
+  1L + as.integer(difftime(end, start, units = interval_units))/interval_vals
 }
 
-get_date_indexes <- function(start_date, date_range_start, date_range_end, by) {
-  # get index of dates relative to start_date time interval (specified with 'by')
+get_date_indexes <- function(start_date, date_range_start, date_range_end, 
+                             interval_vals, interval_units) {
+  # get index of dates relative to start_date time interval
   # used to index into full HDF5 files when only using a subset of dates
-  gd_start = get_difftime(start_date, date_range_start, by)
-  gd_end = get_difftime(start_date, date_range_end, by)
-  index_start = 1L + gd_start[[3]]/gd_start[[1]]
-  index_end = 1L + gd_end[[3]]/gd_end[[1]]
+  # need plural interval_units for difftime
+  interval_units <- paste0(interval_units, "s")
+  diff_drs <- as.integer(difftime(date_range_start, start_date, units = interval_units))
+  diff_dre <- as.integer(difftime(date_range_end, start_date, units = interval_units))
+  index_start = 1L + diff_drs/interval_vals
+  index_end = 1L + diff_dre/interval_vals
   return(seq(index_start, index_end, 1))
-}
-
-get_difftime <- function(start, end, by) {
-  # get difftime based on interval encoded in HDF5 file (specified with 'by')
-  # used in get_interval_number() and get_date_indexes()
-  by_vec = strsplit(by, " ", fixed = TRUE)[[1L]]
-  by_num = as.integer(by_vec[1])
-  by_unit = paste0(by_vec[2], "s")
-  difftime_out = as.integer(difftime(end, start, units = by_unit))
-  return(list(by_num, by_unit, difftime_out))
 }
 
 process_nodes <- function(x){
