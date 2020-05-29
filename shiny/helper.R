@@ -2,7 +2,6 @@
 
 h5_read_attr <- function(data){
   # wrapper around rhdf5::h5readAttributes
-  
   hydro_attr <- lapply(data[["datapath"]], h5readAttributes, "/hydro")
   time_attr <- lapply(data[["datapath"]], h5readAttributes, "/hydro/data/channel flow")
   h5closeAll()
@@ -28,7 +27,8 @@ calc_end_date <- function(start_date, num_intervals, interval_vals, interval_uni
 water_year <- function(x){
   # takes a date object and returns the water year (Oct 1st to Sept 30th)
   # https://en.wikipedia.org/wiki/Water_year
-  as.integer(format(x, "%Y")) + ifelse(as.integer(format(x, "%m")) >= 10L, 1L, 0L)
+  x_lt <- as.POSIXlt(x)
+  x_lt$year + 1900L + ifelse(x_lt$mon + 1L >= 10L, 1L, 0L)
 }
 
 get_interval_number <- function(start, end, interval_vals, interval_units){
@@ -65,6 +65,7 @@ simple_cap <- function(x) {
         sep = "", collapse = " ")
 }
 
+
 h5_read <- function(data, node, channels, dates, name){
   # wrapper around rhdf5::h5read
   # loop through selected files to read selected data in load data step
@@ -73,7 +74,7 @@ h5_read <- function(data, node, channels, dates, name){
   sc = names(dates) # scenarios are stored in list names; dates reflects only scenarios with valid value
   for (i in sc){
     dp = data[["datapath"]][data[["scenario"]] == i]
-    out[[i]] = h5read(dp, paste0("/hydro", name), 
+    out[[i]] = h5read(dp, paste0("/hydro", name),
                       index = list(node[[i]][["Index"]], channels[[i]][["Index"]], dates[[i]][["Index"]]))  # nodes, channels, dates for order of index; NULL indicates load all
   }
   return(out)
