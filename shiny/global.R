@@ -23,6 +23,8 @@ if (.Platform[["OS.type"]] == "windows") {
 
 source("helper.R")
 
+
+# need to add channels as package data
 shp = rgdal::readOGR(dsn = "./shapefiles", layer = "FlowlinesLatLong")
 cll = read.csv("data/ChannelLatLong.csv")   # used for placing map markers for selected channels
 channels = sort(cll$channel_nu)  # used for selectInput widget

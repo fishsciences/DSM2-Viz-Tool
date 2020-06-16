@@ -68,7 +68,7 @@ navbarPage(
           p(align = "center", hidden(actionButton(inputId = "read_data", label = "Read Data", icon = icon("spinner")))),
           hidden(helpText(id = "date_range_read_warn_large",
                           "Warning: Date range includes large number of intervals (see Table 2); reading data will be slow and may run out of memory. 
-                          It is recommended to select less than one year of data because differences between scenarios are likely to be swamped by seasonal and annual variation.")),
+                          It is recommended to select less than one year of data because differences between scenarios are likely to be swamped by seasonal and annual variation."))
         ),
         conditionalPanel(
           condition = 'input.explore_tabs == "Time Series"',
